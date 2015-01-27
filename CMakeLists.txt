@@ -1,0 +1,23 @@
+cmake_minimum_required (VERSION 2.8)
+project(map_merging)
+
+find_package(catkin_simple REQUIRED)
+find_package(Boost COMPONENTS thread system filesystem program_options date_time REQUIRED)
+find_package(PCL 1.7 REQUIRED)
+
+catkin_simple(ALL_DEPS_REQUIRED)
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+
+include_directories(${CMAKE_CURRENT_BINARY_DIR} ${Boost_INCLUDE_DIRS} ${PCL_INCLUDE_DIRS}
+link_directories(${PCL_LIBRARY_DIRS})
+add_definitions(${PCL_DEFINITIONS}))
+
+cs_add_library(${PROJECT_NAME} src/dense_sparse_simulator.cc)
+cs_add_executable(simple_viewer src/simple_viewer.cc)
+cs_add_executable(icp_registration src/icp_registration.cc)
+
+target_link_libraries(simple_viewer ${PROJECT_NAME} ${catkin_LIBRARIES})
+target_link_libraries(icp_registration ${PROJECT_NAME} ${catkin_LIBRARIES})
+
+cs_install()
+cs_export()

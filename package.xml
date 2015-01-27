@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<package>
+  <name>map_merging</name>
+  <version>0.0.0</version>
+  <description>A Dense and Sparse Map Simulator</description>
+
+  <maintainer email="fontana.simone@outlook.com">Simone Fontana</maintainer>
+  <license>Apache 2.0</license>
+
+  <buildtool_depend>catkin</buildtool_depend>
+  <buildtool_depend>catkin_simple</buildtool_depend>
+
+  <build_depend>eigen_catkin</build_depend>
+  <build_depend>pcl_ros</build_depend>
+</package>
