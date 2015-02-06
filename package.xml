@@ -12,4 +12,10 @@
 
   <build_depend>eigen_catkin</build_depend>
   <build_depend>pcl_ros</build_depend>
+  <build_depend>aslam_backend</build_depend>
+  <build_depend>aslam_backend_expressions</build_depend>
+  <build_depend>sm_kinematics</build_depend>
+
+  <run_depend>aslam_backend</run_depend>
+
 </package>
