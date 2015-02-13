@@ -17,6 +17,7 @@
 #include <pcl/impl/instantiate.hpp>
 #include <pcl/common/transforms.h>
 #include <Eigen/Geometry>
+#include <time.h>
 
 namespace dense_sparse_simulator {
 
@@ -39,8 +40,8 @@ class DenseSparseSimulator {
   @param surfaceEquation a pointer to a function of two variables that defines
   the surface(i.e. z = surfaceEquation(x,y))
   */
-  DenseSparseSimulator(int num_sparse_points, float dense_surface_size,
-                       float dense_resolution, float sparse_noise_std,
+  DenseSparseSimulator(int num_sparse_points, double dense_surface_size,
+                       double dense_resolution, double sparse_noise_std,
                        double (*surfaceEquation)(double, double));
 
   /**
@@ -50,8 +51,13 @@ class DenseSparseSimulator {
   points of the sparse map
   @param dense_file_name the filename of the .pcd file
   */
-  DenseSparseSimulator(int num_sparse_points, float sparse_noise_std,
+  DenseSparseSimulator(int num_sparse_points, double sparse_noise_std,
                        std::string dense_file_name);
+
+  // Return a map containing the data association. The key of the map is the
+  // index of the point in the sparse map, the value is the index of the
+  // corresponding point in the dense map
+  std::map<int, int>& dataAssociation();
 
   // Returns a shared pointer to the sparse point cloud
   typename pcl::PointCloud<PointType>::Ptr sparseMap();
@@ -60,21 +66,27 @@ class DenseSparseSimulator {
   typename pcl::PointCloud<PointType>::Ptr denseMap();
 
   // Returns the transformation that was applied to the sparse point cloud
-  Eigen::Affine3f& denseToSparseTransform();
+  Eigen::Affine3d& denseToSparseTransform();
   bool state();
 
  private:
-  float dense_surface_size_;
-  float dense_resolution_;
+  double dense_surface_size_;
+  double dense_resolution_;
   int num_sparse_points_;
   bool state_;
+  std::map<int, int> data_association;
   typename pcl::PointCloud<PointType>::Ptr dense_map_;
   typename pcl::PointCloud<PointType>::Ptr sparse_map_;
-  Eigen::Affine3f denseToSparseTransform_;
-  void generateSparse(float sparse_noise_std);
-  void sparseRandomTransform(float traslation_range);
+  Eigen::Affine3d denseToSparseTransform_;
+  void generateSparse(double sparse_noise_std);
+  void sparseRandomTransform(double traslation_range);
   double (*surfaceEquation_)(double x, double y);
 };
+
+template <typename PointType>
+inline std::map<int, int>& DenseSparseSimulator<PointType>::dataAssociation() {
+  return data_association;
+}
 
 template <typename PointType>
 inline typename pcl::PointCloud<PointType>::Ptr
@@ -89,7 +101,7 @@ DenseSparseSimulator<PointType>::denseMap() {
 }
 
 template <typename PointType>
-inline typename Eigen::Affine3f&
+inline typename Eigen::Affine3d&
 DenseSparseSimulator<PointType>::denseToSparseTransform() {
   return denseToSparseTransform_;
 }

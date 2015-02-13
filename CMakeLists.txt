@@ -20,7 +20,7 @@ cs_add_executable(aslam_map_merging src/aslam_map_merging.cc)
 
 target_link_libraries(simple_viewer ${PROJECT_NAME} ${catkin_LIBRARIES})
 target_link_libraries(icp_registration ${PROJECT_NAME} ${catkin_LIBRARIES} ${VTK_LIBRARIES})
-target_link_libraries(aslam_map_merging ${catkin_LIBRARIES} ${Boost_LIBRARIES})
+target_link_libraries(aslam_map_merging ${PROJECT_NAME} ${catkin_LIBRARIES} ${Boost_LIBRARIES} ${VTK_LIBRARIES})
 
 cs_install()
 cs_export()
