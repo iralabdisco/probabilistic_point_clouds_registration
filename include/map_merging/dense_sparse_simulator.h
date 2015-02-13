@@ -9,15 +9,15 @@
 #ifndef MAP_MERGING_DENSE_SPARSE_SIMULATOR_H_
 #define MAP_MERGING_DENSE_SPARSE_SIMULATOR_H_
 
+#include <map>
 #include <string>
 
+#include <Eigen/Geometry>
+#include <pcl/common/transforms.h>
+#include <pcl/impl/instantiate.hpp>
 #include <pcl/io/pcd_io.h>
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
-#include <pcl/impl/instantiate.hpp>
-#include <pcl/common/transforms.h>
-#include <Eigen/Geometry>
-#include <time.h>
 
 namespace dense_sparse_simulator {
 
