@@ -1,3 +1,5 @@
+#include <cmath>
+
 #include <pcl/filters/voxel_grid.h>
 #include <pcl/point_types.h>
 #include <pcl/visualization/pcl_visualizer.h>
@@ -16,18 +18,11 @@
 
 typedef pcl::PointXYZ PointType;
 
+double surfaceEquation(double x, double y) { return sin(x) + cos(y); }
+
 int main(int argc, char** argv) {
   std::string node_name = "aslam_map_merging";
   ros::init(argc, argv, node_name);
-
-  std::string file_name;
-  if (ros::param::get(node_name + "/cloud_file_name", file_name) == false) {
-    ROS_INFO(
-        "No file name provided, using equation z = sin(x)+cos(y) to generate a "
-        "point cloud");
-  } else {
-    ROS_INFO("Using file %s", file_name.c_str());
-  }
 
   double noise_std;
   ros::param::param<double>(node_name + "/noise_std", noise_std, 0.05);
@@ -43,15 +38,31 @@ int main(int argc, char** argv) {
   viewer.createViewPort(0.0, 0.0, 0.5, 1.0, v0);
   viewer.setBackgroundColor(0, 0, 0, v0);
 
-  dense_sparse_simulator::DenseSparseSimulator<PointType> simulator(
-      num_landmarks, noise_std, file_name);
-  pcl::PointCloud<PointType>::Ptr dense_map = simulator.denseMap();
-  pcl::PointCloud<PointType>::Ptr sparse_map(simulator.sparseMap());
+  std::string file_name;
+  std::unique_ptr<dense_sparse_simulator::DenseSparseSimulator<PointType>>
+      simulator;
+  if (ros::param::get(node_name + "/cloud_file_name", file_name) == false) {
+    ROS_INFO(
+        "No file name provided, using equation z = sin(x)+cos(y) to generate a "
+        "point cloud");
+    simulator.reset(new dense_sparse_simulator::DenseSparseSimulator<PointType>(
+        num_landmarks, 5, 0.01, noise_std, *surfaceEquation));
+  } else {
+    ROS_INFO("Using file %s", file_name.c_str());
+    simulator.reset(new dense_sparse_simulator::DenseSparseSimulator<PointType>(
+        num_landmarks, noise_std, file_name));
+  }
 
-  pcl::VoxelGrid<PointType> filter;
-  filter.setInputCloud(dense_map);
-  filter.setLeafSize(0.05f, 0.05f, 0.05f);
-  filter.filter(*dense_map);
+  pcl::PointCloud<PointType>::Ptr dense_map = simulator->denseMap();
+
+  if (simulator->state() == 1) {
+    pcl::VoxelGrid<PointType> filter;
+    filter.setInputCloud(dense_map);
+    filter.setLeafSize(0.05f, 0.05f, 0.05f);
+    filter.filter(*dense_map);
+  }
+
+  pcl::PointCloud<PointType>::Ptr sparse_map(simulator->sparseMap());
 
   boost::shared_ptr<aslam::backend::OptimizationProblem> problem(
       new aslam::backend::OptimizationProblem);
@@ -74,7 +85,7 @@ int main(int argc, char** argv) {
     sparse_point << sparse_map->points[i].x, sparse_map->points[i].y,
         sparse_map->points[i].z;
 
-    int dense_index = simulator.dataAssociation()[i];
+    int dense_index = simulator->dataAssociation()[i];
     dense_point << dense_map->points[dense_index].x,
         dense_map->points[dense_index].y, dense_map->points[dense_index].z;
 
@@ -111,7 +122,8 @@ int main(int argc, char** argv) {
   viewer.addPointCloud<PointType>(dense_map, dense_blue, "dense_map", v0);
   viewer.addPointCloud<PointType>(sparse_map, sparse_red, "sparse_map", v0);
 
-  Eigen::Affine3d real_transform = simulator.denseToSparseTransform().inverse();
+  Eigen::Affine3d real_transform =
+      simulator->denseToSparseTransform().inverse();
 
   Eigen::Vector3d estimated_translation =
       traslation->toExpression().toEuclidean();

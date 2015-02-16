@@ -40,7 +40,7 @@ DenseSparseSimulator<PointType>::DenseSparseSimulator(
 
   generateSparse(sparse_noise_std);
   sparseRandomTransform(dense_surface_size / 10);
-  state_ = 1;
+  state_ = 2;
 }
 
 template <typename PointType>
@@ -52,6 +52,8 @@ DenseSparseSimulator<PointType>::DenseSparseSimulator(
   if (pcl::io::loadPCDFile<PointType>(dense_file_name, *dense_map_) == -1) {
     state_ = 0;
   } else {
+    std::vector<int> tmp_indices;
+    pcl::removeNaNFromPointCloud(*dense_map_, *dense_map_, tmp_indices);
     generateSparse(sparse_noise_std);
     sparseRandomTransform(1);
     state_ = 1;

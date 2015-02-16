@@ -18,6 +18,7 @@
 #include <pcl/io/pcd_io.h>
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
+#include <pcl/filters/filter.h>
 
 namespace dense_sparse_simulator {
 
@@ -67,13 +68,13 @@ class DenseSparseSimulator {
 
   // Returns the transformation that was applied to the sparse point cloud
   Eigen::Affine3d& denseToSparseTransform();
-  bool state();
+  int state();
 
  private:
   double dense_surface_size_;
   double dense_resolution_;
   int num_sparse_points_;
-  bool state_;
+  int state_;
   std::map<int, int> data_association;
   typename pcl::PointCloud<PointType>::Ptr dense_map_;
   typename pcl::PointCloud<PointType>::Ptr sparse_map_;
@@ -82,6 +83,11 @@ class DenseSparseSimulator {
   void sparseRandomTransform(double traslation_range);
   double (*surfaceEquation_)(double x, double y);
 };
+
+template <typename PointType>
+inline int DenseSparseSimulator<PointType>::state() {
+  return state_;
+}
 
 template <typename PointType>
 inline std::map<int, int>& DenseSparseSimulator<PointType>::dataAssociation() {
