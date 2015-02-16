@@ -1,6 +1,8 @@
 #include <pcl/filters/voxel_grid.h>
 #include <pcl/point_types.h>
 #include <pcl/visualization/pcl_visualizer.h>
+#include "ros/ros.h"
+#include <ros/console.h>
 
 #include <aslam/backend/ErrorTermEuclidean.hpp>
 #include <aslam/backend/EuclideanExpression.hpp>
@@ -15,15 +17,34 @@
 typedef pcl::PointXYZ PointType;
 
 int main(int argc, char** argv) {
+  std::string node_name = "aslam_map_merging";
+  ros::init(argc, argv, node_name);
+
+  std::string file_name;
+  if (ros::param::get(node_name + "/cloud_file_name", file_name) == false) {
+    ROS_INFO(
+        "No file name provided, using equation z = sin(x)+cos(y) to generate a "
+        "point cloud");
+  } else {
+    ROS_INFO("Using file %s", file_name.c_str());
+  }
+
+  double noise_std;
+  ros::param::param<double>(node_name + "/noise_std", noise_std, 0.05);
+  ROS_INFO("Using gaussian noise with standard deviation %f", noise_std);
+
+  int num_landmarks;
+  ros::param::param<int>(node_name + "/num_landmarks", num_landmarks, 1000);
+  ROS_INFO("Generating sparse map with %i landmarks", num_landmarks);
+
   pcl::visualization::PCLVisualizer viewer;
   viewer.initCameraParameters();
   int v0(0);
   viewer.createViewPort(0.0, 0.0, 0.5, 1.0, v0);
   viewer.setBackgroundColor(0, 0, 0, v0);
 
-  int num_landmarks = 10000;
   dense_sparse_simulator::DenseSparseSimulator<PointType> simulator(
-      num_landmarks, 0.05, "/home/simone/Scaricati/kitchen/Rf12.pcd");
+      num_landmarks, noise_std, file_name);
   pcl::PointCloud<PointType>::Ptr dense_map = simulator.denseMap();
   pcl::PointCloud<PointType>::Ptr sparse_map(simulator.sparseMap());
 
@@ -116,16 +137,14 @@ int main(int argc, char** argv) {
   Eigen::Quaternion<double> real_rot =
       Eigen::Quaternion<double>(real_transform.rotation());
 
-  std::printf("\nEstimated trans\t| Real trans\n");
-  std::printf("%f\t| %f\n", estimated_translation[0], real_trans[0]);
-  std::printf("%f\t| %f\n", estimated_translation[1], real_trans[1]);
-  std::printf("%f\t| %f\n", estimated_translation[2], real_trans[2]);
+  ROS_INFO("\nEstimated trans\t| Real trans\n%f\t| %f\n%f\t| %f\n%f\t| %f\n",
+           estimated_translation[0], real_trans[0], estimated_translation[1],
+           real_trans[1], estimated_translation[2], real_trans[2]);
 
-  std::printf("\nEstimated rot\t| Real rot\n");
-  std::printf("%f\t| %f\n", estimated_rot.x(), real_rot.x());
-  std::printf("%f\t| %f\n", estimated_rot.y(), real_rot.y());
-  std::printf("%f\t| %f\n", estimated_rot.z(), real_rot.z());
-  std::printf("%f\t| %f\n", estimated_rot.w(), real_rot.w());
+  ROS_INFO(
+      "\nEstimated rot\t| Real rot\n%f\t| %f\n%f\t| %f\n%f\t| %f\n%f\t| %f\n",
+      estimated_rot.x(), real_rot.x(), estimated_rot.y(), real_rot.y(),
+      estimated_rot.z(), real_rot.z(), estimated_rot.w(), real_rot.w());
 
   while (!viewer.wasStopped()) {
     viewer.spinOnce(100);
