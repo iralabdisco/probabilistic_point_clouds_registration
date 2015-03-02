@@ -5,6 +5,9 @@
 #include <pcl/visualization/pcl_visualizer.h>
 #include "ros/ros.h"
 #include <ros/console.h>
+#include <boost/shared_ptr.hpp>
+
+#include <boost/make_shared.hpp>
 
 #include <aslam/backend/ErrorTermEuclidean.hpp>
 #include <aslam/backend/EuclideanExpression.hpp>
@@ -12,9 +15,12 @@
 #include <aslam/backend/MEstimatorPolicies.hpp>
 #include <aslam/backend/OptimizationProblem.hpp>
 #include <aslam/backend/Optimizer.hpp>
+#include <aslam/backend/ProbDataAssocPolicy.hpp>
 #include <aslam/backend/RotationQuaternion.hpp>
 
 #include "map_merging/dense_sparse_simulator.h"
+
+using aslam::backend::ProbDataAssocPolicy;
 
 typedef pcl::PointXYZ PointType;
 
@@ -25,12 +31,16 @@ int main(int argc, char** argv) {
   ros::init(argc, argv, node_name);
 
   double noise_std;
-  ros::param::param<double>(node_name + "/noise_std", noise_std, 0.05);
+  ros::param::param<double>("~noise_std", noise_std, 0.05);
   ROS_INFO("Using gaussian noise with standard deviation %f", noise_std);
 
   int num_landmarks;
-  ros::param::param<int>(node_name + "/num_landmarks", num_landmarks, 1000);
+  ros::param::param<int>("~num_landmarks", num_landmarks, 1000);
   ROS_INFO("Generating sparse map with %i landmarks", num_landmarks);
+
+  int dim_neighborhood;
+  ros::param::param<int>("~dim_neighborhood", dim_neighborhood, 5);
+  ROS_INFO("Dimension of neighborhood: %d", dim_neighborhood);
 
   pcl::visualization::PCLVisualizer viewer;
   viewer.initCameraParameters();
@@ -41,16 +51,16 @@ int main(int argc, char** argv) {
   std::string file_name;
   std::unique_ptr<dense_sparse_simulator::DenseSparseSimulator<PointType>>
       simulator;
-  if (ros::param::get(node_name + "/cloud_file_name", file_name) == false) {
+  if (ros::param::get("~cloud_file_name", file_name) == false) {
     ROS_INFO(
         "No file name provided, using equation z = sin(x)+cos(y) to generate a "
         "point cloud");
     simulator.reset(new dense_sparse_simulator::DenseSparseSimulator<PointType>(
-        num_landmarks, 5, 0.01, noise_std, *surfaceEquation));
+        num_landmarks, 5, 0.01, noise_std, dim_neighborhood, *surfaceEquation));
   } else {
     ROS_INFO("Using file %s", file_name.c_str());
     simulator.reset(new dense_sparse_simulator::DenseSparseSimulator<PointType>(
-        num_landmarks, noise_std, file_name));
+        num_landmarks, noise_std, dim_neighborhood, file_name));
   }
 
   pcl::PointCloud<PointType>::Ptr dense_map = simulator->denseMap();
@@ -80,27 +90,35 @@ int main(int argc, char** argv) {
   rotation->setActive(true);
   problem->addDesignVariable(rotation);
 
+  ProbDataAssocPolicy::ErrorTermGroups error_groups(
+      new std::vector<ProbDataAssocPolicy::ErrorTermGroup>);
   Eigen::Vector3d sparse_point, dense_point;
-  for (uint i = 0; i < sparse_map->points.size(); i++) {
+  for (std::size_t i = 0; i < sparse_map->points.size(); i++) {
+    ProbDataAssocPolicy::ErrorTermGroup error_group(
+        new std::vector<ProbDataAssocPolicy::ErrorTermPtr>);
+    error_groups->push_back(error_group);
     sparse_point << sparse_map->points[i].x, sparse_map->points[i].y,
         sparse_map->points[i].z;
 
-    int dense_index = simulator->dataAssociation()[i];
-    dense_point << dense_map->points[dense_index].x,
-        dense_map->points[dense_index].y, dense_map->points[dense_index].z;
-
-    boost::shared_ptr<aslam::backend::ErrorTermEuclidean> error_term(
-        new aslam::backend::ErrorTermEuclidean(
-            (rotation->toExpression() *
-             aslam::backend::EuclideanExpression(sparse_point)) +
-                traslation->toExpression(),
-            dense_point, 1));
-    boost::shared_ptr<aslam::backend::FixedWeightMEstimator> weight(
-        new aslam::backend::FixedWeightMEstimator(1));
-    error_term->setMEstimatorPolicy(weight);
-    problem->addErrorTerm(error_term);
+    for (std::size_t j = 0; j < dim_neighborhood; j++) {
+      std::shared_ptr<std::vector<int>> neighborhood =
+          simulator->dataAssociation()[i];
+      int dense_index = neighborhood->at(j);
+      dense_point << dense_map->points[dense_index].x,
+          dense_map->points[dense_index].y, dense_map->points[dense_index].z;
+      boost::shared_ptr<aslam::backend::ErrorTermEuclidean> error_term(
+          new aslam::backend::ErrorTermEuclidean(
+              (rotation->toExpression() *
+               aslam::backend::EuclideanExpression(sparse_point)) +
+                  traslation->toExpression(),
+              dense_point, 1));
+      boost::shared_ptr<aslam::backend::FixedWeightMEstimator> weight(
+          new aslam::backend::FixedWeightMEstimator(1));
+      error_term->setMEstimatorPolicy(weight);
+      error_group->push_back(error_term);
+      problem->addErrorTerm(error_term);
+    }
   }
-
   aslam::backend::OptimizerOptions options;
   options.verbose = true;
   // options.linearSolver = "cholmod";
@@ -113,6 +131,9 @@ int main(int argc, char** argv) {
   // Then create the optimizer and go!
   aslam::backend::Optimizer optimizer(options);
   optimizer.setProblem(problem);
+  boost::shared_ptr<ProbDataAssocPolicy> weight_updater(
+      new ProbDataAssocPolicy(error_groups, 1));
+  optimizer.setPerIterationCallback(weight_updater);
   optimizer.optimize();
 
   pcl::visualization::PointCloudColorHandlerCustom<pcl::PointXYZ> dense_blue(

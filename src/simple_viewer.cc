@@ -9,7 +9,7 @@ inline double surfaceEquation(double x, double y) { return sin(x) + cos(y); }
 
 int main() {
   dense_sparse_simulator::DenseSparseSimulator<pcl::PointXYZ> simulator(
-      1000, 0, "/home/simone/Downloads/kitchen/Rf10.pcd");
+      1000, 0, 1, "/home/simone/Downloads/kitchen/Rf10.pcd");
   pcl::PointCloud<pcl::PointXYZRGB>::Ptr colored_dense_map(
       new pcl::PointCloud<pcl::PointXYZRGB>);
   pcl::copyPointCloud(*(simulator.denseMap()), *colored_dense_map);

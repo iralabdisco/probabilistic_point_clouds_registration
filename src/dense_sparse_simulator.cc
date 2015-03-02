@@ -7,7 +7,8 @@ namespace dense_sparse_simulator {
 template <typename PointType>
 DenseSparseSimulator<PointType>::DenseSparseSimulator(
     int num_sparse_points, double dense_surface_size, double dense_resolution,
-    double sparse_noise_std, double (*surfaceEquation)(double, double)) {
+    double sparse_noise_std, int dim_neighborhood,
+    double (*surfaceEquation)(double, double)) {
   assert(dense_surface_size > 0);
   assert(num_sparse_points <
          pow(static_cast<int>(dense_surface_size / dense_resolution), 2));
@@ -17,6 +18,7 @@ DenseSparseSimulator<PointType>::DenseSparseSimulator(
   dense_surface_size_ = dense_surface_size;
   dense_resolution_ = dense_resolution;
   surfaceEquation_ = surfaceEquation;
+  dim_neighborhood_ = dim_neighborhood;
   // Generates dense map
   dense_map_.reset(new pcl::PointCloud<PointType>);
   dense_map_->width = static_cast<int>(dense_surface_size_ / dense_resolution_);
@@ -45,10 +47,11 @@ DenseSparseSimulator<PointType>::DenseSparseSimulator(
 
 template <typename PointType>
 DenseSparseSimulator<PointType>::DenseSparseSimulator(
-    int num_sparse_points, double sparse_noise_std,
+    int num_sparse_points, double sparse_noise_std, int dim_neighborhood,
     std::string dense_file_name) {
   dense_map_.reset(new pcl::PointCloud<PointType>);
   num_sparse_points_ = num_sparse_points;
+  dim_neighborhood_ = dim_neighborhood;
   if (pcl::io::loadPCDFile<PointType>(dense_file_name, *dense_map_) == -1) {
     state_ = 0;
   } else {
@@ -74,15 +77,22 @@ void DenseSparseSimulator<PointType>::generateSparse(double sparse_noise_std) {
   std::normal_distribution<double> gaussian_noise(0, sparse_noise_std);
   std::uniform_int_distribution<int> unif_distribution(0,
                                                        dense_map_->size() - 1);
+
   for (int i = 0; i < num_sparse_points_; i++) {
     int p = unif_distribution(generator);
-    data_association[i] = p;
+    data_association_.push_back(std::shared_ptr<std::vector<int>>(
+        new std::vector<int>(dim_neighborhood_)));
+    (data_association_[i])->at(0) = p;
     sparse_map_->points[i].x =
         dense_map_->points[p].x + gaussian_noise(generator);
     sparse_map_->points[i].y =
         dense_map_->points[p].y + gaussian_noise(generator);
     sparse_map_->points[i].z =
         dense_map_->points[p].z + gaussian_noise(generator);
+    for (int j = 1; j < dim_neighborhood_; j++) {
+      int index = unif_distribution(generator);
+      (data_association_[i])->at(j) = index;
+    }
   }
 }
 

@@ -10,7 +10,9 @@
 #define MAP_MERGING_DENSE_SPARSE_SIMULATOR_H_
 
 #include <map>
+#include <memory>
 #include <string>
+#include <vector>
 
 #include <Eigen/Geometry>
 #include <pcl/common/transforms.h>
@@ -43,6 +45,7 @@ class DenseSparseSimulator {
   */
   DenseSparseSimulator(int num_sparse_points, double dense_surface_size,
                        double dense_resolution, double sparse_noise_std,
+                       int dim_neighborhood,
                        double (*surfaceEquation)(double, double));
 
   /**
@@ -53,12 +56,12 @@ class DenseSparseSimulator {
   @param dense_file_name the filename of the .pcd file
   */
   DenseSparseSimulator(int num_sparse_points, double sparse_noise_std,
-                       std::string dense_file_name);
+                       int dim_neighborhood, std::string dense_file_name);
 
   // Return a map containing the data association. The key of the map is the
   // index of the point in the sparse map, the value is the index of the
   // corresponding point in the dense map
-  std::map<int, int>& dataAssociation();
+  std::vector<std::shared_ptr<std::vector<int>>> dataAssociation();
 
   // Returns a shared pointer to the sparse point cloud
   typename pcl::PointCloud<PointType>::Ptr sparseMap();
@@ -74,8 +77,9 @@ class DenseSparseSimulator {
   double dense_surface_size_;
   double dense_resolution_;
   int num_sparse_points_;
+  int dim_neighborhood_;
   int state_;
-  std::map<int, int> data_association;
+  std::vector<std::shared_ptr<std::vector<int>>> data_association_;
   typename pcl::PointCloud<PointType>::Ptr dense_map_;
   typename pcl::PointCloud<PointType>::Ptr sparse_map_;
   Eigen::Affine3d denseToSparseTransform_;
@@ -90,8 +94,9 @@ inline int DenseSparseSimulator<PointType>::state() {
 }
 
 template <typename PointType>
-inline std::map<int, int>& DenseSparseSimulator<PointType>::dataAssociation() {
-  return data_association;
+inline std::vector<std::shared_ptr<std::vector<int>>>
+DenseSparseSimulator<PointType>::dataAssociation() {
+  return data_association_;
 }
 
 template <typename PointType>

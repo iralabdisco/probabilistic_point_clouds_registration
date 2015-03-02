@@ -34,11 +34,11 @@ int main(int argc, char** argv) {
         "No file name provided, using equation z = sin(x)+cos(y) to generate a "
         "point cloud");
     simulator.reset(new dense_sparse_simulator::DenseSparseSimulator<PointType>(
-        num_landmarks, 5, noise_std, noise_std, *surfaceEquation));
+        num_landmarks, 5, noise_std, noise_std, 1, *surfaceEquation));
   } else {
     ROS_INFO("Using file %s", file_name.c_str());
     simulator.reset(new dense_sparse_simulator::DenseSparseSimulator<PointType>(
-        num_landmarks, noise_std, file_name));
+        num_landmarks, noise_std, 1, file_name));
   }
 
   pcl::PointCloud<PointType>::Ptr dense_map = simulator->denseMap();
