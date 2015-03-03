@@ -16,11 +16,11 @@ add_definitions(${PCL_DEFINITIONS}))
 cs_add_library(${PROJECT_NAME} src/dense_sparse_simulator.cc)
 cs_add_executable(simple_viewer src/simple_viewer.cc)
 cs_add_executable(icp_registration src/icp_registration.cc)
-cs_add_executable(aslam_map_merging src/aslam_map_merging.cc)
+cs_add_executable(aslam_map_merging_simulator src/aslam_map_merging_simulator.cc)
 
 target_link_libraries(simple_viewer ${PROJECT_NAME} ${catkin_LIBRARIES})
 target_link_libraries(icp_registration ${PROJECT_NAME} ${catkin_LIBRARIES} ${VTK_LIBRARIES})
-target_link_libraries(aslam_map_merging ${PROJECT_NAME} ${catkin_LIBRARIES} ${Boost_LIBRARIES} ${VTK_LIBRARIES})
+target_link_libraries(aslam_map_merging_simulator ${PROJECT_NAME} ${catkin_LIBRARIES} ${Boost_LIBRARIES} ${VTK_LIBRARIES})
 
 cs_install()
 cs_export()
