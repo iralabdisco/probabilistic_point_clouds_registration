@@ -1,4 +1,5 @@
 #include <cmath>
+#include <limits>
 
 #include <pcl/filters/voxel_grid.h>
 #include <pcl/point_types.h>
@@ -68,8 +69,8 @@ int main(int argc, char** argv) {
   if (simulator->state() == 1) {
     pcl::VoxelGrid<PointType> filter;
     filter.setInputCloud(dense_map);
-    filter.setLeafSize(0.05f, 0.05f, 0.05f);
-    filter.filter(*dense_map);
+    filter.setLeafSize(1, 1, 1);
+    // filter.filter(*dense_map);
   }
 
   pcl::PointCloud<PointType>::Ptr sparse_map(simulator->sparseMap());
@@ -128,6 +129,7 @@ int main(int argc, char** argv) {
   // Force it to over-optimize
   options.convergenceDeltaX = 1e-19;
   options.convergenceDeltaJ = 1e-19;
+  options.maxIterations = std::numeric_limits<int>::max();
   // Then create the optimizer and go!
   aslam::backend::Optimizer optimizer(options);
   optimizer.setProblem(problem);
