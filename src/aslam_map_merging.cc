@@ -12,6 +12,7 @@
 #include <ros/console.h>
 #include <boost/shared_ptr.hpp>
 #include <pcl/io/pcd_io.h>
+
 #include <pcl/registration/ia_ransac.h>
 #include <pcl/visualization/cloud_viewer.h>
 #include <pcl/sample_consensus/method_types.h>
@@ -45,6 +46,10 @@ int main(int argc, char** argv) {
   ros::param::param<int>("~dim_neighborhood", dim_neighborhood, 10);
   ROS_INFO("The dimension of neighborhood: %d", dim_neighborhood);
 
+  double dof;
+  ros::param::param<double>("~dof", dof, 5);
+  ROS_INFO("Degree of freedom of t-distribution: %f", dof);
+
   double radius;
   ros::param::param<double>("~radius", radius, 3);
   ROS_INFO("Radius of the neighborhood search: %f", radius);
@@ -73,27 +78,27 @@ int main(int argc, char** argv) {
     ROS_INFO("Using file %s as dense point cloud", dense_file_name.c_str());
   }
 
-  pcl::ModelCoefficients::Ptr coefficients(new pcl::ModelCoefficients);
-  pcl::PointIndices::Ptr inliers(new pcl::PointIndices);
-  // Create the segmentation object
-  pcl::SACSegmentation<PointType> seg;
-  // Optional
-  seg.setOptimizeCoefficients(true);
-  // Mandatory
-  seg.setModelType(pcl::SACMODEL_PLANE);
-  seg.setMethodType(pcl::SAC_RANSAC);
-  seg.setDistanceThreshold(0.5);
-  seg.setInputCloud(sparse_cloud);
+  // pcl::ModelCoefficients::Ptr coefficients(new pcl::ModelCoefficients);
+  // pcl::PointIndices::Ptr inliers(new pcl::PointIndices);
+  // // Create the segmentation object
+  // pcl::SACSegmentation<PointType> seg;
+  // // Optional
+  // seg.setOptimizeCoefficients(true);
+  // // Mandatory
+  // seg.setModelType(pcl::SACMODEL_PLANE);
+  // seg.setMethodType(pcl::SAC_RANSAC);
+  // seg.setDistanceThreshold(0.1);
+  // seg.setInputCloud(sparse_cloud);
   // seg.segment(*inliers, *coefficients);
 
-  pcl::ExtractIndices<PointType> extract;
-  extract.setInputCloud(sparse_cloud);
-  extract.setIndices(inliers);
-  extract.setNegative(true);
-  pcl::PointCloud<PointType>::Ptr segmented_sparse =
-      boost::make_shared<pcl::PointCloud<PointType>>();
-  extract.filter(*sparse_cloud);
-
+  // pcl::ExtractIndices<PointType> extract;
+  // extract.setInputCloud(sparse_cloud);
+  // extract.setIndices(inliers);
+  // extract.setNegative(false);
+  // pcl::PointCloud<PointType>::Ptr segmented_sparse =
+  //     boost::make_shared<pcl::PointCloud<PointType>>();
+  // extract.filter(*sparse_cloud);
+  // ROS_INFO_STREAM("Inliers: "<<(*inliers));
   pcl::KdTreeFLANN<PointType> kdtree;
   kdtree.setInputCloud(dense_cloud);
   std::vector<boost::shared_ptr<std::vector<int>>> correspondences(
@@ -111,6 +116,10 @@ int main(int argc, char** argv) {
   boost::shared_ptr<aslam::backend::OptimizationProblem> problem(
       new aslam::backend::OptimizationProblem);
 
+  std::random_device rd;
+  std::mt19937 generator(rd());
+  std::uniform_real_distribution<double> real_distribution(0, 1);
+
   // Creates the design variables: rotation and traslation
   Eigen::Vector3d traslation_initial_guess;
   boost::shared_ptr<aslam::backend::EuclideanPoint> traslation(
@@ -118,7 +127,10 @@ int main(int argc, char** argv) {
   traslation->setActive(true);
   problem->addDesignVariable(traslation);
 
-  Eigen::Vector4d rotation_initial_guess(0, 0, 0, 1);
+  Eigen::Vector4d rotation_initial_guess(
+      real_distribution(generator), real_distribution(generator),
+      real_distribution(generator), real_distribution(generator));
+  rotation_initial_guess.normalize();
   boost::shared_ptr<aslam::backend::RotationQuaternion> rotation(
       new aslam::backend::RotationQuaternion(rotation_initial_guess));
   rotation->setActive(true);
@@ -133,7 +145,6 @@ int main(int argc, char** argv) {
     error_groups->push_back(error_group);
     sparse_point << sparse_cloud->at(i).x, sparse_cloud->at(i).y,
         sparse_cloud->at(i).z;
-
     for (int dense_index : *(correspondences[i])) {
       dense_point << dense_cloud->at(dense_index).x,
           dense_cloud->at(dense_index).y, dense_cloud->at(dense_index).z;
@@ -156,14 +167,14 @@ int main(int argc, char** argv) {
   // options.levenbergMarquardtLambdaInit = 10;
   // options.doSchurComplement = false;
   // options.doLevenbergMarquardt = true;
-  options.convergenceDeltaX = 1e-5;
-  options.convergenceDeltaJ = 1e-5;
+  options.convergenceDeltaX = 1e-3;
+  options.convergenceDeltaJ = 1e-3;
   options.maxIterations = std::numeric_limits<int>::max();
   // Then create the optimizer and go!
   aslam::backend::Optimizer optimizer(options);
   optimizer.setProblem(problem);
   boost::shared_ptr<ProbDataAssocPolicy> weight_updater(
-      new ProbDataAssocPolicy(error_groups, 1));
+      new ProbDataAssocPolicy(error_groups, dof, 3));
   optimizer.setPerIterationCallback(weight_updater);
   optimizer.optimize();
 
@@ -182,6 +193,10 @@ int main(int argc, char** argv) {
            estimated_translation[1], estimated_translation[2]);
   ROS_INFO("Estimated rot: [%f, %f, %f, %f]", estimated_rot.x(),
            estimated_rot.y(), estimated_rot.z(), estimated_rot.w());
+
+  std::string aligned_file_name = "aligned_" + sparse_file_name;
+  pcl::io::savePCDFile(aligned_file_name, *aligned_sparse, true);
+
   pcl::visualization::PCLVisualizer viewer;
   viewer.initCameraParameters();
   int v0(0);

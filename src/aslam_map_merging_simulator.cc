@@ -134,7 +134,7 @@ int main(int argc, char** argv) {
   aslam::backend::Optimizer optimizer(options);
   optimizer.setProblem(problem);
   boost::shared_ptr<ProbDataAssocPolicy> weight_updater(
-      new ProbDataAssocPolicy(error_groups, 1));
+      new ProbDataAssocPolicy(error_groups, 5, 3));
   optimizer.setPerIterationCallback(weight_updater);
   optimizer.optimize();
 
