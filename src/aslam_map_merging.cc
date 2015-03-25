@@ -3,25 +3,15 @@
 #include <string>
 #include <vector>
 
-#include <pcl/filters/voxel_grid.h>
-#include <pcl/keypoints/harris_3d.h>
-#include <pcl/point_types.h>
-#include <pcl/visualization/pcl_visualizer.h>
-#include <pcl/kdtree/kdtree_flann.h>
 #include "ros/ros.h"
-#include <ros/console.h>
+#include <boost/make_shared.hpp>
 #include <boost/shared_ptr.hpp>
 #include <pcl/io/pcd_io.h>
-
-#include <pcl/registration/ia_ransac.h>
+#include <pcl/kdtree/kdtree_flann.h>
+#include <pcl/point_types.h>
 #include <pcl/visualization/cloud_viewer.h>
-#include <pcl/sample_consensus/method_types.h>
-#include <pcl/sample_consensus/model_types.h>
-#include <pcl/segmentation/sac_segmentation.h>
-#include <pcl/filters/extract_indices.h>
-#include <pcl/features/normal_3d.h>
-#include <pcl/features/pfh.h>
-#include <boost/make_shared.hpp>
+#include <pcl/visualization/pcl_visualizer.h>
+#include <ros/console.h>
 
 #include <aslam/backend/ErrorTermEuclidean.hpp>
 #include <aslam/backend/EuclideanExpression.hpp>
@@ -40,16 +30,22 @@ typedef pcl::PointXYZ PointType;
 
 int main(int argc, char** argv) {
   std::string node_name = "aslam_map_merging";
-  ros::init(argc, argv, node_name);
+  ros::init(argc, argv, node_name, ros::init_options::AnonymousName);
 
   int dim_neighborhood;
   ros::param::param<int>("~dim_neighborhood", dim_neighborhood, 10);
   ROS_INFO("The dimension of neighborhood: %d", dim_neighborhood);
 
+  bool use_gaussian;
   double dof;
-  ros::param::param<double>("~dof", dof, 5);
-  ROS_INFO("Degree of freedom of t-distribution: %f", dof);
 
+  ros::param::param<bool>("~use_gaussian", use_gaussian, false);
+  if (use_gaussian) {
+    ROS_INFO("Using gaussian model");
+  } else {
+    ros::param::param<double>("~dof", dof, 5);
+    ROS_INFO("Degree of freedom of t-distribution: %f", dof);
+  }
   double radius;
   ros::param::param<double>("~radius", radius, 3);
   ROS_INFO("Radius of the neighborhood search: %f", radius);
@@ -64,6 +60,9 @@ int main(int argc, char** argv) {
     exit(1);
   } else {
     ROS_INFO("Using file %s as sparse point cloud", sparse_file_name.c_str());
+    std::vector<int> tmp_indices;
+    pcl::removeNaNFromPointCloud(*sparse_cloud, *sparse_cloud, tmp_indices);
+    ROS_INFO("Removed %d NaN points from sparse cloud", tmp_indices.size());
   }
 
   ROS_INFO("Loading dense point cloud");
@@ -76,29 +75,11 @@ int main(int argc, char** argv) {
     exit(1);
   } else {
     ROS_INFO("Using file %s as dense point cloud", dense_file_name.c_str());
+    std::vector<int> tmp_indices;
+    pcl::removeNaNFromPointCloud(*dense_cloud, *dense_cloud, tmp_indices);
+    ROS_INFO("Removed %d NaN points from dense cloud", tmp_indices.size());
   }
 
-  // pcl::ModelCoefficients::Ptr coefficients(new pcl::ModelCoefficients);
-  // pcl::PointIndices::Ptr inliers(new pcl::PointIndices);
-  // // Create the segmentation object
-  // pcl::SACSegmentation<PointType> seg;
-  // // Optional
-  // seg.setOptimizeCoefficients(true);
-  // // Mandatory
-  // seg.setModelType(pcl::SACMODEL_PLANE);
-  // seg.setMethodType(pcl::SAC_RANSAC);
-  // seg.setDistanceThreshold(0.1);
-  // seg.setInputCloud(sparse_cloud);
-  // seg.segment(*inliers, *coefficients);
-
-  // pcl::ExtractIndices<PointType> extract;
-  // extract.setInputCloud(sparse_cloud);
-  // extract.setIndices(inliers);
-  // extract.setNegative(false);
-  // pcl::PointCloud<PointType>::Ptr segmented_sparse =
-  //     boost::make_shared<pcl::PointCloud<PointType>>();
-  // extract.filter(*sparse_cloud);
-  // ROS_INFO_STREAM("Inliers: "<<(*inliers));
   pcl::KdTreeFLANN<PointType> kdtree;
   kdtree.setInputCloud(dense_cloud);
   std::vector<boost::shared_ptr<std::vector<int>>> correspondences(
@@ -109,27 +90,31 @@ int main(int argc, char** argv) {
         boost::make_shared<std::vector<int>>();
     kdtree.radiusSearch(*sparse_cloud, i, radius, *results, distances,
                         dim_neighborhood);
-    ROS_INFO("Found %d correspondences", results->size());
+    ROS_DEBUG("Found %d correspondences", results->size());
     correspondences[i] = results;
   }
 
   boost::shared_ptr<aslam::backend::OptimizationProblem> problem(
       new aslam::backend::OptimizationProblem);
 
+  // Random initialization
   std::random_device rd;
   std::mt19937 generator(rd());
-  std::uniform_real_distribution<double> real_distribution(0, 1);
+  std::uniform_real_distribution<double> random_quat(0, 1);
+  std::uniform_real_distribution<double> random_trans(-2, 2);
 
   // Creates the design variables: rotation and traslation
-  Eigen::Vector3d traslation_initial_guess;
+  Eigen::Vector3d traslation_initial_guess(random_trans(generator),
+                                           random_trans(generator),
+                                           random_trans(generator));
   boost::shared_ptr<aslam::backend::EuclideanPoint> traslation(
       new aslam::backend::EuclideanPoint(traslation_initial_guess));
   traslation->setActive(true);
   problem->addDesignVariable(traslation);
 
   Eigen::Vector4d rotation_initial_guess(
-      real_distribution(generator), real_distribution(generator),
-      real_distribution(generator), real_distribution(generator));
+      random_quat(generator), random_quat(generator), random_quat(generator),
+      random_quat(generator));
   rotation_initial_guess.normalize();
   boost::shared_ptr<aslam::backend::RotationQuaternion> rotation(
       new aslam::backend::RotationQuaternion(rotation_initial_guess));
@@ -170,11 +155,15 @@ int main(int argc, char** argv) {
   options.convergenceDeltaX = 1e-3;
   options.convergenceDeltaJ = 1e-3;
   options.maxIterations = std::numeric_limits<int>::max();
-  // Then create the optimizer and go!
   aslam::backend::Optimizer optimizer(options);
   optimizer.setProblem(problem);
-  boost::shared_ptr<ProbDataAssocPolicy> weight_updater(
-      new ProbDataAssocPolicy(error_groups, dof, 3));
+  boost::shared_ptr<ProbDataAssocPolicy> weight_updater;
+  if (use_gaussian) {
+    weight_updater.reset(new ProbDataAssocPolicy(
+        error_groups, std::numeric_limits<double>::infinity(), 3));
+  } else {
+    weight_updater.reset(new ProbDataAssocPolicy(error_groups, dof, 3));
+  }
   optimizer.setPerIterationCallback(weight_updater);
   optimizer.optimize();
 
@@ -209,16 +198,6 @@ int main(int argc, char** argv) {
   viewer.addPointCloud<PointType>(aligned_sparse, aligned_sparse_red,
                                   "aligned_sparse", v0);
   viewer.addPointCloud<PointType>(dense_cloud, dense_blue, "dense", v0);
-
-  /*  ROS_INFO("\nEstimated trans\t| Real trans\n%f\t| %f\n%f\t| %f\n%f\t|
-     %f\n",
-             real_trans[0], estimated_translation[1],
-             real_trans[1], estimated_translation[2], real_trans[2]);*/
-
-  /*  ROS_INFO(
-        "\nEstimated rot\t| Real rot\n%f\t| %f\n%f\t| %f\n%f\t| %f\n%f\t| %f\n",
-        estimated_rot.x(), real_rot.x(), estimated_rot.y(), real_rot.y(),
-        estimated_rot.z(), real_rot.z(), estimated_rot.w(), real_rot.w());*/
 
   while (!viewer.wasStopped()) {
     viewer.spinOnce(100);

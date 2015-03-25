@@ -1,4 +1,6 @@
 #include <math.h>
+#include <string>
+#include <vector>
 
 #include "map_merging/dense_sparse_simulator.h"
 
@@ -117,9 +119,4 @@ void DenseSparseSimulator<PointType>::sparseRandomTransform(
 }
 
 PCL_INSTANTIATE(DenseSparseSimulator, PCL_XYZ_POINT_TYPES);
-
-// template class DenseSparseSimulator<pcl::PointXYZ>;
-// template class DenseSparseSimulator<pcl::PointXYZRGB>;
-// template class DenseSparseSimulator<pcl::PointXYZRGA>;
-// template class DenseSparseSimulator<pcl::PointXYZI>;
 }  // namespace dense_sparse_simulator

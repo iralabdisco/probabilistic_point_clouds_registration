@@ -1,14 +1,14 @@
 #include <cmath>
 #include <limits>
+#include <string>
+#include <vector>
 
-#include <pcl/filters/voxel_grid.h>
+#include "ros/ros.h"
+#include <boost/make_shared.hpp>
+#include <boost/shared_ptr.hpp>
 #include <pcl/point_types.h>
 #include <pcl/visualization/pcl_visualizer.h>
-#include "ros/ros.h"
 #include <ros/console.h>
-#include <boost/shared_ptr.hpp>
-
-#include <boost/make_shared.hpp>
 
 #include <aslam/backend/ErrorTermEuclidean.hpp>
 #include <aslam/backend/EuclideanExpression.hpp>
@@ -65,13 +65,6 @@ int main(int argc, char** argv) {
   }
 
   pcl::PointCloud<PointType>::Ptr dense_map = simulator->denseMap();
-
-  if (simulator->state() == 1) {
-    pcl::VoxelGrid<PointType> filter;
-    filter.setInputCloud(dense_map);
-    filter.setLeafSize(1, 1, 1);
-    // filter.filter(*dense_map);
-  }
 
   pcl::PointCloud<PointType>::Ptr sparse_map(simulator->sparseMap());
 
@@ -130,7 +123,6 @@ int main(int argc, char** argv) {
   options.convergenceDeltaX = 1e-19;
   options.convergenceDeltaJ = 1e-19;
   options.maxIterations = std::numeric_limits<int>::max();
-  // Then create the optimizer and go!
   aslam::backend::Optimizer optimizer(options);
   optimizer.setProblem(problem);
   boost::shared_ptr<ProbDataAssocPolicy> weight_updater(

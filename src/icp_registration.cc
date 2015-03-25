@@ -16,7 +16,7 @@ double surfaceEquation(double x, double y) { return sin(x) + cos(y); }
 
 int main(int argc, char** argv) {
   std::string node_name = "icp_map_merging";
-  ros::init(argc, argv, node_name);
+  ros::init(argc, argv, node_name, ros::init_options::AnonymousName);
 
   int num_landmarks;
   ros::param::param<int>("~num_landmarks", num_landmarks, 1000);
