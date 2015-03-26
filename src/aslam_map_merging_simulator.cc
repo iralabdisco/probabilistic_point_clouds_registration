@@ -39,6 +39,17 @@ int main(int argc, char** argv) {
   ros::param::param<int>("~num_landmarks", num_landmarks, 1000);
   ROS_INFO("Generating sparse map with %i landmarks", num_landmarks);
 
+  bool use_gaussian;
+  double dof;
+
+  ros::param::param<bool>("~use_gaussian", use_gaussian, false);
+  if (use_gaussian) {
+    ROS_INFO("Using gaussian model");
+  } else {
+    ros::param::param<double>("~dof", dof, 5);
+    ROS_INFO("Degree of freedom of t-distribution: %f", dof);
+  }
+
   int dim_neighborhood;
   ros::param::param<int>("~dim_neighborhood", dim_neighborhood, 5);
   ROS_INFO("Dimension of neighborhood: %d", dim_neighborhood);
@@ -120,13 +131,18 @@ int main(int argc, char** argv) {
   // options.doSchurComplement = false;
   // options.doLevenbergMarquardt = true;
   // Force it to over-optimize
-  options.convergenceDeltaX = 1e-19;
-  options.convergenceDeltaJ = 1e-19;
+  options.convergenceDeltaX = 1e-3;
+  options.convergenceDeltaJ = 1e-3;
   options.maxIterations = std::numeric_limits<int>::max();
   aslam::backend::Optimizer optimizer(options);
   optimizer.setProblem(problem);
-  boost::shared_ptr<ProbDataAssocPolicy> weight_updater(
-      new ProbDataAssocPolicy(error_groups, 5, 3));
+  boost::shared_ptr<ProbDataAssocPolicy> weight_updater;
+  if (use_gaussian) {
+    weight_updater.reset(new ProbDataAssocPolicy(
+        error_groups, std::numeric_limits<double>::infinity(), 3));
+  } else {
+    weight_updater.reset(new ProbDataAssocPolicy(error_groups, dof, 3));
+  }
   optimizer.setPerIterationCallback(weight_updater);
   optimizer.optimize();
 
