@@ -3,12 +3,12 @@
 #include <string>
 #include <vector>
 
-#include "ros/ros.h"
 #include <boost/make_shared.hpp>
 #include <boost/shared_ptr.hpp>
 #include <pcl/point_types.h>
 #include <pcl/visualization/pcl_visualizer.h>
 #include <ros/console.h>
+#include "ros/ros.h"
 
 #include <aslam/backend/ErrorTermEuclidean.hpp>
 #include <aslam/backend/EuclideanExpression.hpp>
