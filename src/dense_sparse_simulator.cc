@@ -2,7 +2,7 @@
 #include <string>
 #include <vector>
 
-#include "map_merging/dense_sparse_simulator.h"
+#include "point_cloud_registration/dense_sparse_simulator.h"
 
 namespace dense_sparse_simulator {
 

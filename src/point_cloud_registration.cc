@@ -6,12 +6,15 @@
 #include "ros/ros.h"
 #include <boost/make_shared.hpp>
 #include <boost/shared_ptr.hpp>
+#include <pcl/common/transforms.h>
 #include <pcl/io/pcd_io.h>
 #include <pcl/kdtree/kdtree_flann.h>
+#include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
 #include <pcl/visualization/cloud_viewer.h>
 #include <pcl/visualization/pcl_visualizer.h>
 #include <ros/console.h>
+#include <pcl/filters/filter.h>
 
 #include <aslam/backend/ErrorTermEuclidean.hpp>
 #include <aslam/backend/EuclideanExpression.hpp>
@@ -21,8 +24,6 @@
 #include <aslam/backend/Optimizer.hpp>
 #include <aslam/backend/ProbDataAssocPolicy.hpp>
 #include <aslam/backend/RotationQuaternion.hpp>
-
-#include "map_merging/dense_sparse_simulator.h"
 
 using aslam::backend::ProbDataAssocPolicy;
 
