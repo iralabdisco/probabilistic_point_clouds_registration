@@ -19,7 +19,7 @@
 #include <aslam/backend/ProbDataAssocPolicy.hpp>
 #include <aslam/backend/RotationQuaternion.hpp>
 
-#include "map_merging/dense_sparse_simulator.h"
+#include "point_cloud_registration/dense_sparse_simulator.h"
 
 using aslam::backend::ProbDataAssocPolicy;
 
