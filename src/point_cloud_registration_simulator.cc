@@ -9,6 +9,8 @@
 #include <pcl/visualization/pcl_visualizer.h>
 #include <ros/console.h>
 #include "ros/ros.h"
+#include "ceres/ceres.h"
+#include "ceres/loss_function.h"
 
 #include <aslam/backend/ErrorTermEuclidean.hpp>
 #include <aslam/backend/EuclideanExpression.hpp>
@@ -20,6 +22,7 @@
 #include <aslam/backend/RotationQuaternion.hpp>
 
 #include "point_cloud_registration/dense_sparse_simulator.h"
+#include "point_cloud_registration/reprojectionError.h"
 
 using aslam::backend::ProbDataAssocPolicy;
 
@@ -79,29 +82,16 @@ int main(int argc, char** argv) {
 
   pcl::PointCloud<PointType>::Ptr sparse_map(simulator->sparseMap());
 
-  boost::shared_ptr<aslam::backend::OptimizationProblem> problem(
-      new aslam::backend::OptimizationProblem);
-
-  // Creates the design variables: rotation and traslation
-  Eigen::Vector3d traslation_initial_guess;
-  boost::shared_ptr<aslam::backend::EuclideanPoint> traslation(
-      new aslam::backend::EuclideanPoint(traslation_initial_guess));
-  traslation->setActive(true);
-  problem->addDesignVariable(traslation);
-
-  Eigen::Vector4d rotation_initial_guess(0, 0, 0, 1);
-  boost::shared_ptr<aslam::backend::RotationQuaternion> rotation(
-      new aslam::backend::RotationQuaternion(rotation_initial_guess));
-  rotation->setActive(true);
-  problem->addDesignVariable(rotation);
-
-  ProbDataAssocPolicy::ErrorTermGroups error_groups(
-      new std::vector<ProbDataAssocPolicy::ErrorTermGroup>);
+  ceres::Problem problem;
+  double rotation[] = {1, 0, 0, 0};
+  double translation[] = {0, 0, 0};
+  // ProbDataAssocPolicy::ErrorTermGroups error_groups(
+  //     new std::vector<ProbDataAssocPolicy::ErrorTermGroup>);
   Eigen::Vector3d sparse_point, dense_point;
   for (std::size_t i = 0; i < sparse_map->points.size(); i++) {
-    ProbDataAssocPolicy::ErrorTermGroup error_group(
-        new std::vector<ProbDataAssocPolicy::ErrorTermPtr>);
-    error_groups->push_back(error_group);
+    // ProbDataAssocPolicy::ErrorTermGroup error_group(
+        // new std::vector<ProbDataAssocPolicy::ErrorTermPtr>);
+    // error_groups->push_back(error_group);
     sparse_point << sparse_map->points[i].x, sparse_map->points[i].y,
         sparse_map->points[i].z;
 
@@ -111,40 +101,39 @@ int main(int argc, char** argv) {
       int dense_index = neighborhood->at(j);
       dense_point << dense_map->points[dense_index].x,
           dense_map->points[dense_index].y, dense_map->points[dense_index].z;
-      boost::shared_ptr<aslam::backend::ErrorTermEuclidean> error_term(
-          new aslam::backend::ErrorTermEuclidean(
-              (rotation->toExpression() *
-               aslam::backend::EuclideanExpression(sparse_point)) +
-                  traslation->toExpression(),
-              dense_point, 1));
-      boost::shared_ptr<aslam::backend::FixedWeightMEstimator> weight(
-          new aslam::backend::FixedWeightMEstimator(1));
-      error_term->setMEstimatorPolicy(weight);
-      error_group->push_back(error_term);
-      problem->addErrorTerm(error_term);
+      ceres::LossFunctionWrapper* weight = new ceres::LossFunctionWrapper(
+          new ceres::ScaledLoss(NULL, 1, ceres::DO_NOT_TAKE_OWNERSHIP),
+          ceres::TAKE_OWNERSHIP);
+      ceres::CostFunction* cost_function =
+          ReprojectionError::Create(sparse_point, dense_point);
+      problem.AddResidualBlock(cost_function, weight, rotation, translation);
+
+      // boost::shared_ptr<aslam::backend::ErrorTermEuclidean> error_term(
+      //     new aslam::backend::ErrorTermEuclidean(
+      //         (rotation->toExpression() *
+      //          aslam::backend::EuclideanExpression(sparse_point)) +
+      //             traslation->toExpression(),
+      //         dense_point, 1));
+      // boost::shared_ptr<aslam::backend::FixedWeightMEstimator> weight(
+      //     new aslam::backend::FixedWeightMEstimator(1));
+      // error_term->setMEstimatorPolicy(weight);
+      // error_group->push_back(error_term);
     }
   }
-  aslam::backend::OptimizerOptions options;
-  options.verbose = true;
-  // options.linearSolver = "cholmod";
-  // options.levenbergMarquardtLambdaInit = 10;
-  // options.doSchurComplement = false;
-  // options.doLevenbergMarquardt = true;
-  // Force it to over-optimize
-  options.convergenceDeltaX = 1e-3;
-  options.convergenceDeltaJ = 1e-3;
-  options.maxIterations = std::numeric_limits<int>::max();
-  aslam::backend::Optimizer optimizer(options);
-  optimizer.setProblem(problem);
-  boost::shared_ptr<ProbDataAssocPolicy> weight_updater;
+  ceres::Solver::Options options;
+  options.linear_solver_type = ceres::DENSE_SCHUR;
+  options.minimizer_progress_to_stdout = true;
+  ceres::Solver::Summary summary;
+  ceres::Solve(options, &problem, &summary);
+  std::cout << summary.FullReport() << "\n";
+
+/*  boost::shared_ptr<ProbDataAssocPolicy> weight_updater;
   if (use_gaussian) {
     weight_updater.reset(new ProbDataAssocPolicy(
         error_groups, std::numeric_limits<double>::infinity(), 3));
   } else {
     weight_updater.reset(new ProbDataAssocPolicy(error_groups, dof, 3));
-  }
-  optimizer.setPerIterationCallback(weight_updater);
-  optimizer.optimize();
+  }*/
 
   pcl::visualization::PointCloudColorHandlerCustom<pcl::PointXYZ> dense_blue(
       dense_map, 0, 0, 255);
@@ -156,10 +145,14 @@ int main(int argc, char** argv) {
   Eigen::Affine3d real_transform =
       simulator->denseToSparseTransform().inverse();
 
-  Eigen::Vector3d estimated_translation =
-      traslation->toExpression().toEuclidean();
-  Eigen::Quaternion<double> estimated_rot(rotation->getQuaternion());
-  estimated_rot = estimated_rot.conjugate();
+  Eigen::Vector3d estimated_translation(translation);
+  Eigen::Quaternion<double> estimated_rot(rotation[0], rotation[1], rotation[2],
+                                          rotation[3]);  // Needed becouse eigen
+                                                         // stores quaternion as
+                                                         // [x,y,z,w] instead
+                                                         // than [w,x,y,z]
+  // estimated_rot = estimated_rot.conjugate();
+  estimated_rot.normalize();
   Eigen::Affine3d estimated_transform = Eigen::Affine3d::Identity();
   estimated_transform.rotate(estimated_rot);
   estimated_transform.pretranslate(Eigen::Vector3d(estimated_translation));
