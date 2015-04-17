@@ -16,6 +16,14 @@ constexpr double pi() { return std::atan(1) * 4; }
 void ProbabilisticWeights::updateWeights(
     const std::vector<std::vector<double>>& residuals,
     std::shared_ptr<std::vector<std::vector<double>>> weights) {
+  SM_ASSERT_TRUE(
+      Exception, weights->size() == residuals.size(),
+      "The dimensions of the weights and residuals vectors must be the same");
+  for (std::size_t i = 0; i < residuals.size(); i++) {
+    SM_ASSERT_TRUE(
+        Exception, residuals[i].size() == weights->at(i).size(),
+        "The dimensions of the weights and residuals vectors must be the same");
+  }
   for (std::size_t j = 0; j < residuals.size(); j++) {
     const std::vector<double>* residuals_group = &(residuals[j]);
     double max_log_prob = -std::numeric_limits<double>::infinity();
@@ -50,7 +58,7 @@ void ProbabilisticWeights::updateWeights(
         weights->at(j)[i] = std::exp(log_probs[i] - marginal_log_likelihood);
       } else {
         weights->at(j)[i] = std::exp(log_probs[i] - marginal_log_likelihood) *
-                     expected_weights[i];
+                            expected_weights[i];
       }
     }
   }
