@@ -46,11 +46,11 @@ bool ReprojectionError::operator()(const double* const rotation,
 
   double transformed_point[kResiduals];
   ceres::QuaternionRotatePoint(rotation, point_x, transformed_point);
-  squared_error = 0;
+  squared_error_ = 0;
   for (int i = 0; i < kResiduals; i++) {
     transformed_point[i] = transformed_point[i] + translation[i];
     residuals[i] = point_y[i] - transformed_point[i];
-    squared_error += residuals[i]*residuals[i];
+    squared_error_ += residuals[i]*residuals[i];
   }
   return true;
 }

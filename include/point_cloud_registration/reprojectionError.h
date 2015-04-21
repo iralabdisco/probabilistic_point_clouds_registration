@@ -15,12 +15,12 @@ struct ReprojectionError {
   bool operator()(const T* const rotation, const T* const translation,
                   T* residuals) const;
 
-  inline double squaredError() { return squared_error; }
+  inline double squaredError() { return squared_error_; }
 
   static const int kResiduals = 3;
   Eigen::Vector3d x_;
   Eigen::Vector3d y_;
-  mutable double squared_error;
+  mutable double squared_error_;
 };
 
 #endif
