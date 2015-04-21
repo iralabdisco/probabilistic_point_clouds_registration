@@ -9,7 +9,7 @@ using point_cloud_registration::ProbabilisticWeights;
 
 std::shared_ptr<std::vector<std::vector<double>>> fillResiduals() {
   std::vector<double> error_group_1(3, 1);
-  std::vector<double> error_group_2 = {1, 4, 9, };
+  std::vector<double> error_group_2 = {1, 4, 9, 16};
   auto residuals = std::make_shared<std::vector<std::vector<double>>>();
   residuals->push_back(error_group_1);
   residuals->push_back(error_group_2);
