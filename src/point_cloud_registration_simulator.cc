@@ -88,6 +88,8 @@ int main(int argc, char** argv) {
   // ProbDataAssocPolicy::ErrorTermGroups error_groups(
   //     new std::vector<ProbDataAssocPolicy::ErrorTermGroup>);
   Eigen::Vector3d sparse_point, dense_point;
+  std::vector<std::vector<ceres::LossFunctionWrapper*>> weights(
+      sparse_map->points.size(), std::vector<ceres::LossFunctionWrapper*>());
   for (std::size_t i = 0; i < sparse_map->points.size(); i++) {
     // ProbDataAssocPolicy::ErrorTermGroup error_group(
         // new std::vector<ProbDataAssocPolicy::ErrorTermPtr>);
@@ -104,6 +106,7 @@ int main(int argc, char** argv) {
       ceres::LossFunctionWrapper* weight = new ceres::LossFunctionWrapper(
           new ceres::ScaledLoss(NULL, 1, ceres::DO_NOT_TAKE_OWNERSHIP),
           ceres::TAKE_OWNERSHIP);
+      weights[i][j] = weight;
       ceres::CostFunction* cost_function =
           ReprojectionError::Create(sparse_point, dense_point);
       problem.AddResidualBlock(cost_function, weight, rotation, translation);
