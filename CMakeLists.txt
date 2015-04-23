@@ -15,24 +15,31 @@ link_directories(${PCL_LIBRARY_DIRS})
 add_definitions(${PCL_DEFINITIONS})
 
 cs_add_library(dense_sparse_simulator src/dense_sparse_simulator.cc)
-cs_add_library(ceres_residuals src/reprojectionError.cc)
-cs_add_library(probabilisticWeights src/probabilisticWeights.cc)
-cs_add_executable(point_cloud_registration_simulator src/point_cloud_registration_simulator.cc)
-cs_add_executable(point_cloud_registration src/point_cloud_registration.cc)
+# cs_add_library(${PROJECT_NAME} 
+#   src/reprojectionError.cc
+#   src/pointCloudRegistration.cc
+#   src/weighted_error_term.cc)
+cs_add_executable(point_cloud_registration_simulator 
+  src/point_cloud_registration_simulator.cc
+  src/reprojectionError.cc
+  src/pointCloudRegistration.cc
+  src/weighted_error_term.cc)
+#cs_add_executable(point_cloud_registration src/point_cloud_registration.cc)
 
 
-catkin_add_gtest(${PROJECT_NAME}_test
-  test/test_main.cc
-  test/ProbabilisticWeightsTest.cc
-)
+# catkin_add_gtest(${PROJECT_NAME}_test
+#   test/test_main.cc
+#   test/ProbabilisticWeightsTest.cc
+# )
 
-target_link_libraries(${PROJECT_NAME}_test probabilisticWeights)
+# target_link_libraries(${PROJECT_NAME}_test ${PROJECT_NAME})
 
-target_link_libraries(point_cloud_registration_simulator dense_sparse_simulator ceres_residuals ${catkin_LIBRARIES} ${Boost_LIBRARIES} ${VTK_LIBRARIES} ${CERES_LIBRARIES})
-target_link_libraries(point_cloud_registration ${catkin_LIBRARIES} ${Boost_LIBRARIES} ${VTK_LIBRARIES})
-target_link_libraries( probabilisticWeights ${catkin_LIBRARIES} ${Boost_LIBRARIES} ${VTK_LIBRARIES})
-
-
+target_link_libraries(point_cloud_registration_simulator 
+  ${CERES_LIBRARIES}
+  dense_sparse_simulator 
+  ${catkin_LIBRARIES} 
+  ${Boost_LIBRARIES} 
+  ${VTK_LIBRARIES})
 
 cs_install()
 cs_export()

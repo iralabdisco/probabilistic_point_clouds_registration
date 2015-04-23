@@ -1,48 +1,18 @@
-#include <Eigen/Dense>
-
-#include "ceres/ceres.h"
-#include "ceres/rotation.h"
-
 #include "point_cloud_registration/reprojectionError.h"
 
-ReprojectionError::ReprojectionError(const Eigen::Vector3d& x,
-                                     const Eigen::Vector3d& y)
-    : x_(x), y_(y) {}
+namespace point_cloud_registration {
 
-// Factory to hide the construction of the CostFunction object from the client
-// code.
-ceres::CostFunction* ReprojectionError::Create(const Eigen::Vector3d& x,
-                                               const Eigen::Vector3d& y) {
-  return (new ceres::AutoDiffCostFunction<ReprojectionError,
-                                          ReprojectionError::kResiduals, 4, 3>(
-      new ReprojectionError(x, y)));
-}
+ReprojectionError::ReprojectionError(const pcl::PointXYZ& source_point,
+                                     const pcl::PointXYZ& target_point)
+    : source_point_(source_point.x, source_point.y, source_point.z),
+      target_point_(target_point.x, target_point.y, target_point.z) {}
 
-template <typename T>
-bool ReprojectionError::operator()(const T* const rotation,
-                                   const T* const translation,
-                                   T* residuals) const {
-  T point_x[kResiduals];
-  T point_y[kResiduals];
-  for (int i = 0; i < kResiduals; i++) {
-    point_x[i] = T(x_[i]);
-    point_y[i] = T(y_[i]);
-  }
-  T transformed_point[kResiduals];
-  ceres::QuaternionRotatePoint(rotation, point_x, transformed_point);
-  for (int i = 0; i < kResiduals; i++) {
-    transformed_point[i] = transformed_point[i] + translation[i];
-    residuals[i] = point_y[i] - transformed_point[i];
-  }
-  return true;
-}
-
-template < >
-bool ReprojectionError::operator()(const double* const rotation,
-                                   const double* const translation,
-                                   double* residuals) const {
-  const double* point_x = x_.data();
-  const double* point_y = y_.data();
+/*template <>
+bool ReprojectionError::operator()<double>(const double* const rotation,
+                                           const double* const translation,
+                                           double* residuals) const {
+  const double* point_x = source_point_.data();
+  const double* point_y = target_point_.data();
 
   double transformed_point[kResiduals];
   ceres::QuaternionRotatePoint(rotation, point_x, transformed_point);
@@ -50,7 +20,9 @@ bool ReprojectionError::operator()(const double* const rotation,
   for (int i = 0; i < kResiduals; i++) {
     transformed_point[i] = transformed_point[i] + translation[i];
     residuals[i] = point_y[i] - transformed_point[i];
-    squared_error_ += residuals[i]*residuals[i];
+    squared_error_ += residuals[i] * residuals[i];
   }
   return true;
-}
+}*/
+
+}  // namespace point_cloud_registration

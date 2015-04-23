@@ -10,7 +10,8 @@ template <typename PointType>
 DenseSparseSimulator<PointType>::DenseSparseSimulator(
     int num_sparse_points, double dense_surface_size, double dense_resolution,
     double sparse_noise_std, int dim_neighborhood,
-    double (*surfaceEquation)(double, double)) {
+    double (*surfaceEquation)(double, double))
+    : data_association_(num_sparse_points, std::vector<int>(dim_neighborhood)) {
   assert(dense_surface_size > 0);
   assert(num_sparse_points <
          pow(static_cast<int>(dense_surface_size / dense_resolution), 2));
@@ -82,9 +83,7 @@ void DenseSparseSimulator<PointType>::generateSparse(double sparse_noise_std) {
 
   for (int i = 0; i < num_sparse_points_; i++) {
     int p = unif_distribution(generator);
-    data_association_.push_back(std::shared_ptr<std::vector<int>>(
-        new std::vector<int>(dim_neighborhood_)));
-    (data_association_[i])->at(0) = p;
+    data_association_[i][0] = p;
     sparse_map_->points[i].x =
         dense_map_->points[p].x + gaussian_noise(generator);
     sparse_map_->points[i].y =
@@ -93,7 +92,7 @@ void DenseSparseSimulator<PointType>::generateSparse(double sparse_noise_std) {
         dense_map_->points[p].z + gaussian_noise(generator);
     for (int j = 1; j < dim_neighborhood_; j++) {
       int index = unif_distribution(generator);
-      (data_association_[i])->at(j) = index;
+      data_association_[i][j] = index;
     }
   }
 }
