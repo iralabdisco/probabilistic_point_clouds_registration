@@ -61,7 +61,7 @@ class DenseSparseSimulator {
   // Return a map containing the data association. The key of the map is the
   // index of the point in the sparse map, the value is the index of the
   // corresponding point in the dense map
-  std::vector<std::shared_ptr<std::vector<int>>> dataAssociation();
+  std::vector<std::vector<int>>* dataAssociation();
 
   // Returns a shared pointer to the sparse point cloud
   typename pcl::PointCloud<PointType>::Ptr sparseMap();
@@ -79,7 +79,7 @@ class DenseSparseSimulator {
   int num_sparse_points_;
   int dim_neighborhood_;
   int state_;
-  std::vector<std::shared_ptr<std::vector<int>>> data_association_;
+  std::vector<std::vector<int>> data_association_;
   typename pcl::PointCloud<PointType>::Ptr dense_map_;
   typename pcl::PointCloud<PointType>::Ptr sparse_map_;
   Eigen::Affine3d denseToSparseTransform_;
@@ -94,9 +94,9 @@ inline int DenseSparseSimulator<PointType>::state() {
 }
 
 template <typename PointType>
-inline std::vector<std::shared_ptr<std::vector<int>>>
+inline std::vector<std::vector<int>>*
 DenseSparseSimulator<PointType>::dataAssociation() {
-  return data_association_;
+  return &data_association_;
 }
 
 template <typename PointType>
