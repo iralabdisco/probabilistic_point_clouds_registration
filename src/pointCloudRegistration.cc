@@ -21,6 +21,7 @@ PointCloudRegistration::PointCloudRegistration(
     }
   }
   weight_updater_.reset(new WeightUpdater(&weighted_error_terms_, dof));
+  (*weight_updater_)(ceres::IterationSummary());
 }
 
 void PointCloudRegistration::Solve(ceres::Solver::Options* options,

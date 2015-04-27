@@ -7,7 +7,7 @@ ReprojectionError::ReprojectionError(const pcl::PointXYZ& source_point,
     : source_point_(source_point.x, source_point.y, source_point.z),
       target_point_(target_point.x, target_point.y, target_point.z) {}
 
-/*template <>
+template <>
 bool ReprojectionError::operator()<double>(const double* const rotation,
                                            const double* const translation,
                                            double* residuals) const {
@@ -23,6 +23,6 @@ bool ReprojectionError::operator()<double>(const double* const rotation,
     squared_error_ += residuals[i] * residuals[i];
   }
   return true;
-}*/
+}
 
 }  // namespace point_cloud_registration
