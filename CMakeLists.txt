@@ -23,7 +23,9 @@ cs_add_executable(point_cloud_registration_simulator
   src/point_cloud_registration_simulator.cc
   src/reprojectionError.cc
   src/pointCloudRegistration.cc
-  src/weighted_error_term.cc)
+  src/weighted_error_term.cc
+  src/weightUpdater.cc
+  src/probabilisticWeights.cc)
 #cs_add_executable(point_cloud_registration src/point_cloud_registration.cc)
 
 

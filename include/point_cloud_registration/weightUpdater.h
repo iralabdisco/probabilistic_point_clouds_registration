@@ -5,15 +5,16 @@
 #include "ceres/ceres.h"
 #include "ceres/loss_function.h"
 #include "point_cloud_registration/probabilisticWeights.h"
-#include "point_cloud_registration/pointCloudRegistration.h"
 #include "point_cloud_registration/reprojectionError.h"
+#include "point_cloud_registration/weighted_error_term.h"
 
 namespace point_cloud_registration {
+typedef std::vector<std::shared_ptr<WeightedErrorTerm>> WeightedErrorTermGroup;
 
-class WeightUpdater : ceres::IterationCallback {
+class WeightUpdater : public ceres::IterationCallback {
  public:
   explicit WeightUpdater(
-      std::vector<WeightedErrorTermGroup>* weighted_error_terms);
+      std::vector<WeightedErrorTermGroup>* weighted_error_terms, double dof);
   ceres::CallbackReturnType operator()(const ceres::IterationSummary& summary);
 
  private:

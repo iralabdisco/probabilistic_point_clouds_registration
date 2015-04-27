@@ -15,7 +15,7 @@ constexpr double pi() { return std::atan(1) * 4; }
 
 void ProbabilisticWeights::updateWeights(
     const std::vector<std::vector<double>>& residuals,
-    std::shared_ptr<std::vector<std::vector<double>>> weights) {
+    std::vector<std::vector<double>>* weights) {
   SM_ASSERT_TRUE(
       Exception, weights->size() == residuals.size(),
       "The dimensions of the weights and residuals vectors must be the same");

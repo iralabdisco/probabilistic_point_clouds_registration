@@ -9,7 +9,7 @@ namespace point_cloud_registration {
 PointCloudRegistration::PointCloudRegistration(
     const pcl::PointCloud<pcl::PointXYZ>& source_cloud,
     const pcl::PointCloud<pcl::PointXYZ>& target_cloud,
-    const std::vector<std::vector<int>>& data_association)
+    const std::vector<std::vector<int>>& data_association, double dof)
     : weighted_error_terms_(source_cloud.size()) {
   for (size_t i = 0; i < data_association.size(); i++) {
     for (size_t j = 0; j < data_association[i].size(); j++) {
@@ -20,20 +20,22 @@ PointCloudRegistration::PointCloudRegistration(
                                 error_term->weight(), rotation_, translation_);
     }
   }
+  weight_updater_.reset(new WeightUpdater(&weighted_error_terms_, dof));
 }
 
-void PointCloudRegistration::Solve(const ceres::Solver::Options& options,
+void PointCloudRegistration::Solve(ceres::Solver::Options* options,
                                    ceres::Solver::Summary* summary) {
-  ceres::Solve(options, &problem_, summary);
+  options->callbacks.push_back(weight_updater_.get());
+  ceres::Solve(*options, &problem_, summary);
 }
 
 std::unique_ptr<Eigen::Quaternion<double>> PointCloudRegistration::rotation() {
   std::unique_ptr<Eigen::Quaternion<double>> estimated_rot(
-      new Eigen::Quaternion<double> (rotation_[0], rotation_[1], rotation_[2],
-                                      rotation_[3]));  // Needed becouse eigen
-                                                       // stores quaternion as
-                                                       // [x,y,z,w] instead
-                                                       // than [w,x,y,z]
+      new Eigen::Quaternion<double>(rotation_[0], rotation_[1], rotation_[2],
+                                    rotation_[3]));  // Needed becouse eigen
+                                                     // stores quaternion as
+                                                     // [x,y,z,w] instead
+                                                     // than [w,x,y,z]
   estimated_rot->normalize();
   return estimated_rot;
 }

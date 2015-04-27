@@ -83,12 +83,12 @@ int main(int argc, char** argv) {
   pcl::PointCloud<PointType>::Ptr sparse_map(simulator->sparseMap());
 
   PointCloudRegistration registration(*sparse_map, *dense_map,
-                                      *(simulator->dataAssociation()));
+                                      *(simulator->dataAssociation()), dof);
   ceres::Solver::Options options;
   options.linear_solver_type = ceres::DENSE_SCHUR;
   options.minimizer_progress_to_stdout = true;
   ceres::Solver::Summary summary;
-  registration.Solve(options, &summary);
+  registration.Solve(&options, &summary);
   std::cout << summary.FullReport() << "\n";
 
   pcl::visualization::PointCloudColorHandlerCustom<pcl::PointXYZ> dense_blue(

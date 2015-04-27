@@ -9,7 +9,7 @@ namespace point_cloud_registration {
 class ProbabilisticWeights {
  public:
   void updateWeights(const std::vector<std::vector<double>>& residuals,
-                     std::shared_ptr<std::vector<std::vector<double>>> weights);
+                     std::vector<std::vector<double>>* weights);
   ProbabilisticWeights(double v, int dimension);
 
  private:
