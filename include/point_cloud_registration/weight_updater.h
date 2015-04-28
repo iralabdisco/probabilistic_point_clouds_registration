@@ -1,11 +1,12 @@
 #ifndef POINT_CLOUD_REGISTRATION_WEIGHT_UPDATER_H
 #define POINT_CLOUD_REGISTRATION_WEIGHT_UPDATER_H
 
+#include <ceres/ceres.h>
+#include <ceres/loss_function.h>
+
 #include <vector>
-#include "ceres/ceres.h"
-#include "ceres/loss_function.h"
-#include "point_cloud_registration/probabilisticWeights.h"
-#include "point_cloud_registration/reprojectionError.h"
+
+#include "point_cloud_registration/probabilistic_weights.h"
 #include "point_cloud_registration/weighted_error_term.h"
 
 namespace point_cloud_registration {

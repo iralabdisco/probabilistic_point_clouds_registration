@@ -1,9 +1,10 @@
 #ifndef POINT_CLOUD_REGISTRATION_REPROJECTION_ERROR_H
 #define POINT_CLOUD_REGISTRATION_REPROJECTION_ERROR_H
+
+#include <ceres/ceres.h>
+#include <ceres/rotation.h>
 #include <Eigen/Core>
 #include <pcl/point_types.h>
-#include "ceres/ceres.h"
-#include "ceres/rotation.h"
 
 namespace point_cloud_registration {
 struct ReprojectionError {

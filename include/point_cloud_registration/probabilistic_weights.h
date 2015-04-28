@@ -1,7 +1,6 @@
 #ifndef POINT_CLOUD_REGISTRATION_PROBABILISTIC_WEIGHTS_H
 #define POINT_CLOUD_REGISTRATION_PROBABILISTIC_WEIGHTS_H
 
-#include <memory>
 #include <vector>
 
 namespace point_cloud_registration {

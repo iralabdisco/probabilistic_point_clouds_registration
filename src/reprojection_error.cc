@@ -1,4 +1,4 @@
-#include "point_cloud_registration/reprojectionError.h"
+#include "point_cloud_registration/reprojection_error.h"
 
 namespace point_cloud_registration {
 

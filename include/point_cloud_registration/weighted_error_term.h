@@ -1,11 +1,11 @@
 #ifndef POINT_CLOUD_REGISTRATION_WEIGHTED_ERROR_TERM_H
 #define POINT_CLOUD_REGISTRATION_WEIGHTED_ERROR_TERM_H
 
+#include <ceres/ceres.h>
+#include <ceres/loss_function.h>
 #include <pcl/point_types.h>
 
-#include "ceres/ceres.h"
-#include "ceres/loss_function.h"
-#include "point_cloud_registration/reprojectionError.h"
+#include "point_cloud_registration/reprojection_error.h"
 
 namespace point_cloud_registration {
 class WeightedErrorTerm {

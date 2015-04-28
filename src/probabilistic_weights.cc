@@ -1,11 +1,9 @@
-#include <limits>
-#include <cmath>
-#include <memory>
-#include <vector>
-
 #include <sm/assert_macros.hpp>
 
-#include "point_cloud_registration/probabilisticWeights.h"
+#include <cmath>
+#include <limits>
+
+#include "point_cloud_registration/probabilistic_weights.h"
 
 namespace point_cloud_registration {
 

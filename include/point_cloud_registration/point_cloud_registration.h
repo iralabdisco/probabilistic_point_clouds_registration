@@ -1,13 +1,16 @@
 #ifndef POINT_CLOUD_REGISTRATION_POINT_CLOUD_REGISTRATION_H
 #define POINT_CLOUD_REGISTRATION_POINT_CLOUD_REGISTRATION_H
 
-#include <vector>
+#include <ceres/ceres.h>
 #include <Eigen/Core>
-#include "ceres/ceres.h"
-#include <pcl/point_types.h>
 #include <pcl/point_cloud.h>
-#include "point_cloud_registration/weightUpdater.h"
+#include <pcl/point_types.h>
+
+#include <vector>
+
+#include "point_cloud_registration/weight_updater.h"
 #include "point_cloud_registration/weighted_error_term.h"
+
 namespace point_cloud_registration {
 
 typedef std::vector<std::shared_ptr<WeightedErrorTerm>> WeightedErrorTermGroup;

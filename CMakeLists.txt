@@ -21,11 +21,11 @@ cs_add_library(dense_sparse_simulator src/dense_sparse_simulator.cc)
 #   src/weighted_error_term.cc)
 cs_add_executable(point_cloud_registration_simulator 
   src/point_cloud_registration_simulator.cc
-  src/reprojectionError.cc
-  src/pointCloudRegistration.cc
+  src/reprojection_error.cc
+  src/point_cloud_registration.cc
   src/weighted_error_term.cc
-  src/weightUpdater.cc
-  src/probabilisticWeights.cc)
+  src/weight_updater.cc
+  src/probabilistic_weights.cc)
 #cs_add_executable(point_cloud_registration src/point_cloud_registration.cc)
 
 

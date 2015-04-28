@@ -22,7 +22,7 @@
 #include <aslam/backend/RotationQuaternion.hpp>
 
 #include "point_cloud_registration/dense_sparse_simulator.h"
-#include "point_cloud_registration/pointCloudRegistration.h"
+#include "point_cloud_registration/point_cloud_registration.h"
 
 using namespace point_cloud_registration;
 using namespace dense_sparse_simulator;
