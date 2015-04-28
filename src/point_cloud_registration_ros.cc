@@ -3,7 +3,7 @@
 #include <string>
 #include <vector>
 
-#include "ros/ros.h"
+#include <ros/ros.h>
 #include <boost/make_shared.hpp>
 #include <boost/shared_ptr.hpp>
 #include <pcl/common/transforms.h>
@@ -15,17 +15,7 @@
 #include <pcl/visualization/pcl_visualizer.h>
 #include <ros/console.h>
 #include <pcl/filters/filter.h>
-
-#include <aslam/backend/ErrorTermEuclidean.hpp>
-#include <aslam/backend/EuclideanExpression.hpp>
-#include <aslam/backend/EuclideanPoint.hpp>
-#include <aslam/backend/MEstimatorPolicies.hpp>
-#include <aslam/backend/OptimizationProblem.hpp>
-#include <aslam/backend/Optimizer.hpp>
-#include <aslam/backend/ProbDataAssocPolicy.hpp>
-#include <aslam/backend/RotationQuaternion.hpp>
-
-using aslam::backend::ProbDataAssocPolicy;
+#include "point_cloud_registration/point_cloud_registration.h"
 
 typedef pcl::PointXYZ PointType;
 
@@ -43,6 +33,7 @@ int main(int argc, char** argv) {
   ros::param::param<bool>("~use_gaussian", use_gaussian, false);
   if (use_gaussian) {
     ROS_INFO("Using gaussian model");
+    dof = std::numeric_limits<double>::infinity();
   } else {
     ros::param::param<double>("~dof", dof, 5);
     ROS_INFO("Degree of freedom of t-distribution: %f", dof);
@@ -83,106 +74,43 @@ int main(int argc, char** argv) {
 
   pcl::KdTreeFLANN<PointType> kdtree;
   kdtree.setInputCloud(dense_cloud);
-  std::vector<boost::shared_ptr<std::vector<int>>> correspondences(
+  std::vector<std::vector<int>> correspondences(
       sparse_cloud->size());
   std::vector<float> distances(dim_neighborhood);
   for (std::size_t i = 0; i < sparse_cloud->size(); i++) {
-    boost::shared_ptr<std::vector<int>> results =
-        boost::make_shared<std::vector<int>>();
-    kdtree.radiusSearch(*sparse_cloud, i, radius, *results, distances,
+    std::vector<int> results;
+    kdtree.radiusSearch(*sparse_cloud, i, radius, results, distances,
                         dim_neighborhood);
-    ROS_DEBUG("Found %d correspondences", results->size());
+    ROS_DEBUG("Found %d correspondences", results.size());
     correspondences[i] = results;
   }
 
-  boost::shared_ptr<aslam::backend::OptimizationProblem> problem(
-      new aslam::backend::OptimizationProblem);
+  point_cloud_registration::PointCloudRegistration registration(
+      *sparse_cloud, *dense_cloud, correspondences, dof);
 
-  // Random initialization
-  std::random_device rd;
-  std::mt19937 generator(rd());
-  std::uniform_real_distribution<double> random_quat(0, 1);
-  std::uniform_real_distribution<double> random_trans(-2, 2);
+  ceres::Solver::Options options;
+  options.linear_solver_type = ceres::DENSE_QR;
+  options.minimizer_progress_to_stdout = true;
+  options.max_num_iterations = std::numeric_limits<int>::max();
+  ceres::Solver::Summary summary;
+  registration.Solve(&options, &summary);
+  ROS_INFO_STREAM(summary.FullReport());
 
-  // Creates the design variables: rotation and traslation
-  Eigen::Vector3d traslation_initial_guess(random_trans(generator),
-                                           random_trans(generator),
-                                           random_trans(generator));
-  boost::shared_ptr<aslam::backend::EuclideanPoint> traslation(
-      new aslam::backend::EuclideanPoint(traslation_initial_guess));
-  traslation->setActive(true);
-  problem->addDesignVariable(traslation);
-
-  Eigen::Vector4d rotation_initial_guess(
-      random_quat(generator), random_quat(generator), random_quat(generator),
-      random_quat(generator));
-  rotation_initial_guess.normalize();
-  boost::shared_ptr<aslam::backend::RotationQuaternion> rotation(
-      new aslam::backend::RotationQuaternion(rotation_initial_guess));
-  rotation->setActive(true);
-  problem->addDesignVariable(rotation);
-
-  ProbDataAssocPolicy::ErrorTermGroups error_groups(
-      new std::vector<ProbDataAssocPolicy::ErrorTermGroup>);
-  Eigen::Vector3d sparse_point, dense_point;
-  for (std::size_t i = 0; i < sparse_cloud->size(); i++) {
-    ProbDataAssocPolicy::ErrorTermGroup error_group(
-        new std::vector<ProbDataAssocPolicy::ErrorTermPtr>);
-    error_groups->push_back(error_group);
-    sparse_point << sparse_cloud->at(i).x, sparse_cloud->at(i).y,
-        sparse_cloud->at(i).z;
-    for (int dense_index : *(correspondences[i])) {
-      dense_point << dense_cloud->at(dense_index).x,
-          dense_cloud->at(dense_index).y, dense_cloud->at(dense_index).z;
-      boost::shared_ptr<aslam::backend::ErrorTermEuclidean> error_term(
-          new aslam::backend::ErrorTermEuclidean(
-              (rotation->toExpression() *
-               aslam::backend::EuclideanExpression(sparse_point)) +
-                  traslation->toExpression(),
-              dense_point, 1));
-      boost::shared_ptr<aslam::backend::FixedWeightMEstimator> weight(
-          new aslam::backend::FixedWeightMEstimator(1));
-      error_term->setMEstimatorPolicy(weight);
-      error_group->push_back(error_term);
-      problem->addErrorTerm(error_term);
-    }
-  }
-  aslam::backend::OptimizerOptions options;
-  options.verbose = true;
-  // options.linearSolver = "cholmod";
-  // options.levenbergMarquardtLambdaInit = 10;
-  // options.doSchurComplement = false;
-  // options.doLevenbergMarquardt = true;
-  options.convergenceDeltaX = 1e-3;
-  options.convergenceDeltaJ = 1e-3;
-  options.maxIterations = std::numeric_limits<int>::max();
-  aslam::backend::Optimizer optimizer(options);
-  optimizer.setProblem(problem);
-  boost::shared_ptr<ProbDataAssocPolicy> weight_updater;
-  if (use_gaussian) {
-    weight_updater.reset(new ProbDataAssocPolicy(
-        error_groups, std::numeric_limits<double>::infinity(), 3));
-  } else {
-    weight_updater.reset(new ProbDataAssocPolicy(error_groups, dof, 3));
-  }
-  optimizer.setPerIterationCallback(weight_updater);
-  optimizer.optimize();
-
-  Eigen::Vector3d estimated_translation =
-      traslation->toExpression().toEuclidean();
-  Eigen::Quaternion<double> estimated_rot(rotation->getQuaternion());
-  estimated_rot = estimated_rot.conjugate();
+  std::unique_ptr<Eigen::Quaternion<double>> estimated_rot =
+      registration.rotation();
+  std::unique_ptr<Eigen::Vector3d> estimated_translation =
+      registration.translation();
   Eigen::Affine3d estimated_transform = Eigen::Affine3d::Identity();
-  estimated_transform.rotate(estimated_rot);
-  estimated_transform.pretranslate(Eigen::Vector3d(estimated_translation));
+  estimated_transform.rotate(*estimated_rot);
+  estimated_transform.pretranslate(Eigen::Vector3d(*estimated_translation));
   pcl::PointCloud<PointType>::Ptr aligned_sparse(
       new pcl::PointCloud<PointType>());
   pcl::transformPointCloud(*sparse_cloud, *aligned_sparse, estimated_transform);
 
-  ROS_INFO("Estimated trans: [%f, %f, %f]", estimated_translation[0],
-           estimated_translation[1], estimated_translation[2]);
-  ROS_INFO("Estimated rot: [%f, %f, %f, %f]", estimated_rot.x(),
-           estimated_rot.y(), estimated_rot.z(), estimated_rot.w());
+  ROS_INFO("Estimated trans: [%f, %f, %f]", (*estimated_translation)[0],
+           (*estimated_translation)[1], (*estimated_translation)[2]);
+  ROS_INFO("Estimated rot: [%f, %f, %f, %f]", estimated_rot->x(),
+           estimated_rot->y(), estimated_rot->z(), estimated_rot->w());
 
   std::string aligned_file_name = "aligned_" + sparse_file_name;
   pcl::io::savePCDFile(aligned_file_name, *aligned_sparse, true);

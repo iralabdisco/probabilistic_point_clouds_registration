@@ -20,7 +20,7 @@ PointCloudRegistration::PointCloudRegistration(
   std::random_device rd;
   std::mt19937 generator(rd());
   std::uniform_real_distribution<double> real_distribution(
-      -5, 5);  // TODO modify this
+      -2, 2);  // TODO modify this
   double sum = 0;
   for (std::size_t i = 0; i < 3; i++) {
     translation_[i] = real_distribution(generator);

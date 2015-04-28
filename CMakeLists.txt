@@ -15,18 +15,17 @@ link_directories(${PCL_LIBRARY_DIRS})
 add_definitions(${PCL_DEFINITIONS})
 
 cs_add_library(dense_sparse_simulator src/dense_sparse_simulator.cc)
-# cs_add_library(${PROJECT_NAME} 
-#   src/reprojectionError.cc
-#   src/pointCloudRegistration.cc
-#   src/weighted_error_term.cc)
-cs_add_executable(point_cloud_registration_simulator 
-  src/point_cloud_registration_simulator.cc
+cs_add_library(${PROJECT_NAME} 
   src/reprojection_error.cc
   src/point_cloud_registration.cc
   src/weighted_error_term.cc
   src/weight_updater.cc
   src/probabilistic_weights.cc)
-#cs_add_executable(point_cloud_registration src/point_cloud_registration.cc)
+
+cs_add_executable(point_cloud_registration_simulator 
+  src/point_cloud_registration_simulator.cc)
+
+cs_add_executable(point_cloud_registration_ros src/point_cloud_registration_ros.cc)
 
 
 # catkin_add_gtest(${PROJECT_NAME}_test
@@ -38,7 +37,15 @@ cs_add_executable(point_cloud_registration_simulator
 
 target_link_libraries(point_cloud_registration_simulator 
   ${CERES_LIBRARIES}
+  ${PROJECT_NAME}
   dense_sparse_simulator 
+  ${catkin_LIBRARIES} 
+  ${Boost_LIBRARIES} 
+  ${VTK_LIBRARIES})
+
+target_link_libraries(point_cloud_registration_ros
+  ${CERES_LIBRARIES}
+  ${PROJECT_NAME}
   ${catkin_LIBRARIES} 
   ${Boost_LIBRARIES} 
   ${VTK_LIBRARIES})
