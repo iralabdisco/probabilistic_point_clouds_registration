@@ -87,6 +87,7 @@ int main(int argc, char** argv) {
   ceres::Solver::Options options;
   options.linear_solver_type = ceres::DENSE_SCHUR;
   options.minimizer_progress_to_stdout = true;
+  options.max_num_iterations = std::numeric_limits<int>::max();
   ceres::Solver::Summary summary;
   registration.Solve(&options, &summary);
   std::cout << summary.FullReport() << "\n";

@@ -25,12 +25,12 @@ class PointCloudRegistration {
 
  private:
   std::vector<WeightedErrorTermGroup> weighted_error_terms_;
-  ceres::Problem problem_;
+  std::unique_ptr<ceres::Problem> problem_;
   ceres::Solver::Options problem_options_;
   ceres::Solver::Summary problem_summary_;
   std::unique_ptr<WeightUpdater> weight_updater_;
-  double rotation_[4] = {1, 0, 0, 0};
-  double translation_[3] = {0, 0, 0};
+  double rotation_[4];
+  double translation_[3];
 };
 
 }  // namespace point_cloud_registration
