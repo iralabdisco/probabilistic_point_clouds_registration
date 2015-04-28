@@ -1,31 +1,14 @@
-#include <cmath>
+#include <ceres/ceres.h>
+#include <pcl/point_types.h>
+#include <pcl/visualization/pcl_visualizer.h>
+#include <ros/ros.h>
+
 #include <limits>
 #include <string>
 #include <vector>
 
-#include <boost/make_shared.hpp>
-#include <boost/shared_ptr.hpp>
-#include <pcl/point_types.h>
-#include <pcl/visualization/pcl_visualizer.h>
-#include <ros/console.h>
-#include "ros/ros.h"
-#include "ceres/ceres.h"
-#include "ceres/loss_function.h"
-
-#include <aslam/backend/ErrorTermEuclidean.hpp>
-#include <aslam/backend/EuclideanExpression.hpp>
-#include <aslam/backend/EuclideanPoint.hpp>
-#include <aslam/backend/MEstimatorPolicies.hpp>
-#include <aslam/backend/OptimizationProblem.hpp>
-#include <aslam/backend/Optimizer.hpp>
-#include <aslam/backend/ProbDataAssocPolicy.hpp>
-#include <aslam/backend/RotationQuaternion.hpp>
-
 #include "point_cloud_registration/dense_sparse_simulator.h"
 #include "point_cloud_registration/point_cloud_registration.h"
-
-using namespace point_cloud_registration;
-using namespace dense_sparse_simulator;
 
 typedef pcl::PointXYZ PointType;
 
@@ -82,15 +65,15 @@ int main(int argc, char** argv) {
 
   pcl::PointCloud<PointType>::Ptr sparse_map(simulator->sparseMap());
 
-  PointCloudRegistration registration(*sparse_map, *dense_map,
-                                      *(simulator->dataAssociation()), dof);
+  point_cloud_registration::PointCloudRegistration registration(
+      *sparse_map, *dense_map, *(simulator->dataAssociation()), dof);
   ceres::Solver::Options options;
   options.linear_solver_type = ceres::DENSE_SCHUR;
   options.minimizer_progress_to_stdout = true;
   options.max_num_iterations = std::numeric_limits<int>::max();
   ceres::Solver::Summary summary;
   registration.Solve(&options, &summary);
-  std::cout << summary.FullReport() << "\n";
+  ROS_INFO_STREAM(summary.FullReport());
 
   pcl::visualization::PointCloudColorHandlerCustom<pcl::PointXYZ> dense_blue(
       dense_map, 0, 0, 255);
