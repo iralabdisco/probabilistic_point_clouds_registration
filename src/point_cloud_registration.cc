@@ -6,33 +6,25 @@
 using std::size_t;
 
 namespace point_cloud_registration {
+const double PointCloudRegistration::default_rotation[4] = {1, 0, 0, 0};
+const double PointCloudRegistration::default_translation[3] = {0, 0, 0};
 
 PointCloudRegistration::PointCloudRegistration(
     const pcl::PointCloud<pcl::PointXYZ>& source_cloud,
     const pcl::PointCloud<pcl::PointXYZ>& target_cloud,
-    const std::vector<std::vector<int>>& data_association, double dof)
-    : weighted_error_terms_(source_cloud.size()) {
-  ceres::Problem::Options prob_opt;
+    const std::vector<std::vector<int>>& data_association, double dof,
+    const double rotation_initial_guess[4],
+    const double translation_initial_guess[3])
+    : weighted_error_terms_(source_cloud.size()),
+      rotation_{rotation_initial_guess[0], rotation_initial_guess[1],
+                rotation_initial_guess[2], rotation_initial_guess[3]},
+      translation_{translation_initial_guess[0], translation_initial_guess[1],
+                   translation_initial_guess[2]} {
+  // ceres::Problem::Options prob_opt;
   // prob_opt.cost_function_ownership = ceres::DO_NOT_TAKE_OWNERSHIP;
   // prob_opt.loss_function_ownership = ceres::DO_NOT_TAKE_OWNERSHIP;
   /*prob_opt.local_parameterization_ownership = ceres::DO_NOT_TAKE_OWNERSHIP;*/
-  problem_.reset(new ceres::Problem(prob_opt));
-  std::random_device rd;
-  std::mt19937 generator(rd());
-  std::uniform_real_distribution<double> real_distribution(
-      -2, 2);  // TODO modify this
-  double sum = 0;
-  for (std::size_t i = 0; i < 3; i++) {
-    translation_[i] = real_distribution(generator);
-    rotation_[i] = real_distribution(generator);
-    sum += rotation_[i];
-  }
-  rotation_[3] = real_distribution(generator);
-  sum += rotation_[3];
-  for (std::size_t i = 0; i < 4; i++) {
-    rotation_[i] /= sum;
-  }
-
+  problem_.reset(new ceres::Problem());
   for (size_t i = 0; i < data_association.size(); i++) {
     for (size_t j = 0; j < data_association[i].size(); j++) {
       std::shared_ptr<WeightedErrorTerm> error_term(new WeightedErrorTerm(
@@ -42,13 +34,15 @@ PointCloudRegistration::PointCloudRegistration(
                                  error_term->weight(), rotation_, translation_);
     }
   }
-  weight_updater_.reset(new WeightUpdater(&weighted_error_terms_, dof));
+  weight_updater_.reset(
+      new WeightUpdater(&weighted_error_terms_, dof, rotation_, translation_));
   (*weight_updater_)(ceres::IterationSummary());
 }
 
 void PointCloudRegistration::Solve(ceres::Solver::Options* options,
                                    ceres::Solver::Summary* summary) {
   options->callbacks.push_back(weight_updater_.get());
+  options->update_state_every_iteration = true;
   ceres::Solve(*options, problem_.get(), summary);
 }
 

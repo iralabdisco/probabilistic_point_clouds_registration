@@ -64,12 +64,18 @@ int main(int argc, char** argv) {
   pcl::PointCloud<PointType>::Ptr dense_map = simulator->denseMap();
 
   pcl::PointCloud<PointType>::Ptr sparse_map(simulator->sparseMap());
-
+  for (auto v : *(simulator->dataAssociation())) {
+    for (auto e: v){
+      std::cout << dense_map->at(e)<<std::endl;
+    }
+  }
   point_cloud_registration::PointCloudRegistration registration(
       *sparse_map, *dense_map, *(simulator->dataAssociation()), dof);
   ceres::Solver::Options options;
   options.linear_solver_type = ceres::DENSE_SCHUR;
   options.minimizer_progress_to_stdout = true;
+  options.use_nonmonotonic_steps = true;
+  options.max_num_consecutive_invalid_steps = 200;
   options.max_num_iterations = std::numeric_limits<int>::max();
   ceres::Solver::Summary summary;
   registration.Solve(&options, &summary);
