@@ -188,7 +188,7 @@ int main(int argc, char** argv) {
       "\nEstimated rot\t| Real rot\n%f\t| %f\n%f\t| %f\n%f\t| %f\n%f\t| %f\n",
       estimated_rot.x(), real_rot.x(), estimated_rot.y(), real_rot.y(),
       estimated_rot.z(), real_rot.z(), estimated_rot.w(), real_rot.w());
-
+  pcl::io::savePCDFile("sparse_cloud.pcd", *sparse_map, true);
   while (!viewer.wasStopped()) {
     viewer.spinOnce(100);
     boost::this_thread::sleep(boost::posix_time::microseconds(100000));
