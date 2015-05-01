@@ -50,6 +50,7 @@ int main(int argc, char** argv) {
     ROS_INFO("Degree of freedom of t-distribution: %f", dof);
   }
 
+  
   int dim_neighborhood;
   ros::param::param<int>("~dim_neighborhood", dim_neighborhood, 5);
   ROS_INFO("Dimension of neighborhood: %d", dim_neighborhood);
@@ -188,7 +189,7 @@ int main(int argc, char** argv) {
       "\nEstimated rot\t| Real rot\n%f\t| %f\n%f\t| %f\n%f\t| %f\n%f\t| %f\n",
       estimated_rot.x(), real_rot.x(), estimated_rot.y(), real_rot.y(),
       estimated_rot.z(), real_rot.z(), estimated_rot.w(), real_rot.w());
-  pcl::io::savePCDFile("sparse_cloud.pcd", *sparse_map, true);
+  pcl::io::savePCDFile("sparse_cloud.pcd", *aligned_sparse, true);
   while (!viewer.wasStopped()) {
     viewer.spinOnce(100);
     boost::this_thread::sleep(boost::posix_time::microseconds(100000));

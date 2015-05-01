@@ -81,6 +81,22 @@ int main(int argc, char** argv) {
     ROS_INFO("Removed %d NaN points from dense cloud", tmp_indices.size());
   }
 
+  double dense_filter_size;
+  ros::param::param<int>("~dense_filter_size", dense_filter_size, 0);
+  ROS_INFO("Dimension of filter for dense map: %d", dense_filter_size);  
+
+  double sparse_filter_size;
+  ros::param::param<int>("~sparse_filter_size", sparse_filter_size, 0);
+  ROS_INFO("Dimension of filter for sparse map: %d", sparse_filter_size);
+
+  pcl::PointCloud<PointType>::Ptr filterd_dense_cloud;
+
+  pcl::VoxelGrid<PointType> voxel_filter;
+  sor.setInputCloud (dense_cloud);
+  sor.setLeafSize (dense_filter_size, dense_filter_size, dense_filter_size);
+  sor.filter (*cloud_filtered);
+
+
   pcl::KdTreeFLANN<PointType> kdtree;
   kdtree.setInputCloud(dense_cloud);
   std::vector<boost::shared_ptr<std::vector<int>>> correspondences(
