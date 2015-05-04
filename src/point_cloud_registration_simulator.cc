@@ -101,6 +101,7 @@ int main(int argc, char** argv) {
   pcl::PointCloud<PointType>::Ptr aligned_sparse(
       new pcl::PointCloud<PointType>());
   pcl::transformPointCloud(*sparse_map, *aligned_sparse, estimated_transform);
+  pcl::io::savePCDFile("sparse_cloud_5000.pcd", *aligned_sparse, true);
 
   int v1(0);
   viewer.createViewPort(0.5, 0.0, 1.0, 1.0, v1);

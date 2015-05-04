@@ -51,7 +51,7 @@ DenseSparseSimulator<PointType>::DenseSparseSimulator(
 template <typename PointType>
 DenseSparseSimulator<PointType>::DenseSparseSimulator(
     int num_sparse_points, double sparse_noise_std, int dim_neighborhood,
-    std::string dense_file_name) {
+    std::string dense_file_name):data_association_(num_sparse_points, std::vector<int>(dim_neighborhood))  {
   dense_map_.reset(new pcl::PointCloud<PointType>);
   num_sparse_points_ = num_sparse_points;
   dim_neighborhood_ = dim_neighborhood;

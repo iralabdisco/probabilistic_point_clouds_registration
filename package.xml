@@ -15,7 +15,9 @@
   <build_depend>aslam_backend</build_depend>
   <build_depend>aslam_backend_expressions</build_depend>
   <build_depend>sm_kinematics</build_depend>
-
+  <build_depend>roscpp</build_depend>
+  <build_depend>geometry_msgs</build_depend>
+  <build_depend>eigen_conversions</build_depend>
   <run_depend>aslam_backend</run_depend>
 
 </package>

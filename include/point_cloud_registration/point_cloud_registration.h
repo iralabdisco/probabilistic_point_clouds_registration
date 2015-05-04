@@ -36,6 +36,7 @@ class PointCloudRegistration {
   inline std::vector<std::shared_ptr<Eigen::Vector3d>>* translation_history() {
     return weight_updater_->translation_history();
   }
+  std::vector<Eigen::Affine3d> transformation_history();
 
  private:
   std::vector<WeightedErrorTermGroup> weighted_error_terms_;

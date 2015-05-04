@@ -63,4 +63,20 @@ std::unique_ptr<Eigen::Vector3d> PointCloudRegistration::translation() {
   return estimated_translation;
 }
 
+std::vector<Eigen::Affine3d> PointCloudRegistration::transformation_history() {
+  std::vector<std::shared_ptr<Eigen::Vector3d>> trans_hist =
+      *(weight_updater_->translation_history());
+  std::vector<std::shared_ptr<Eigen::Quaternion<double>>> rot_hist =
+      *(weight_updater_->rotation_history());
+  std::vector<Eigen::Affine3d> ret;
+  Eigen::Affine3d affine;
+  for (std::size_t i = 0; i < rot_hist.size(); i++) {
+    affine.setIdentity();
+    affine.rotate(*(rot_hist[i]));
+    affine.pretranslate(*(trans_hist[i]));
+    ret.push_back(affine);
+  }
+  return ret;
+}
+
 }  // namespace point_cloud_registration

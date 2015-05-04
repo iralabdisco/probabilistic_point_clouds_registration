@@ -17,6 +17,14 @@
 #include <ros/console.h>
 #include <pcl/filters/filter.h>
 #include <pcl/filters/voxel_grid.h>
+#include <pcl/sample_consensus/method_types.h>
+#include <pcl/sample_consensus/model_types.h>
+#include <pcl/segmentation/sac_segmentation.h>
+#include <pcl/filters/extract_indices.h>
+
+#include <eigen_conversions/eigen_msg.h>
+
+#include <geometry_msgs/Transform.h>
 
 #include "point_cloud_registration/point_cloud_registration.h"
 
@@ -37,6 +45,9 @@ void keyboardEventOccurred(const pcl::visualization::KeyboardEvent& event,
 int main(int argc, char** argv) {
   std::string node_name = "aslam_map_merging";
   ros::init(argc, argv, node_name, ros::init_options::AnonymousName);
+  ros::NodeHandle n;
+  ros::Publisher trans_pub =
+      n.advertise<geometry_msgs::Transform>("transforms", 10000);
 
   int dim_neighborhood;
   ros::param::param<int>("~dim_neighborhood", dim_neighborhood, 10);
@@ -101,17 +112,44 @@ int main(int argc, char** argv) {
       new pcl::PointCloud<PointType>());
   pcl::PointCloud<PointType>::Ptr filtered_dense_cloud(
       new pcl::PointCloud<PointType>());
-
   pcl::VoxelGrid<PointType> filter;
+
+  pcl::ModelCoefficients::Ptr coefficients (new pcl::ModelCoefficients);
+  pcl::PointIndices::Ptr inliers (new pcl::PointIndices);
+  // Create the segmentation object
+  pcl::SACSegmentation<pcl::PointXYZ> plane_segmentation;
+  // Optional
+  plane_segmentation.setOptimizeCoefficients (true);
+  // Mandatory
+  plane_segmentation.setModelType (pcl::SACMODEL_PLANE);
+  plane_segmentation.setMethodType (pcl::SAC_RANSAC);
+  plane_segmentation.setDistanceThreshold (1);
+
+  plane_segmentation.setInputCloud (dense_cloud);
+  plane_segmentation.segment (*inliers, *coefficients);
+  pcl::ExtractIndices<pcl::PointXYZ> extract;
+  extract.setInputCloud (dense_cloud);
+  extract.setIndices (inliers);
+  extract.setNegative (true);
+  extract.filter (*dense_cloud);
+
+
+  if (sparse_filter_size > 0){
   filter.setInputCloud(sparse_cloud);
   filter.setLeafSize(sparse_filter_size, sparse_filter_size,
                      sparse_filter_size);
   filter.filter(*filtered_sparse_cloud);
+}
+else{
+  filtered_sparse_cloud = sparse_cloud;
+}
 
+if(dense_filter_size > 0){
   filter.setInputCloud(dense_cloud);
   filter.setLeafSize(dense_filter_size, dense_filter_size,
                      dense_filter_size);
   filter.filter(*filtered_dense_cloud);
+}else{ filtered_dense_cloud = dense_cloud;}
 
 
   pcl::KdTreeFLANN<PointType> kdtree;
@@ -147,8 +185,7 @@ int main(int argc, char** argv) {
   estimated_transform.pretranslate(Eigen::Vector3d(*estimated_translation));
   pcl::PointCloud<PointType>::Ptr aligned_sparse(
       new pcl::PointCloud<PointType>(*sparse_cloud));
-  // pcl::transformPointCloud(*sparse_cloud, *aligned_sparse,
-  // estimated_transform);
+  pcl::transformPointCloud(*sparse_cloud, *aligned_sparse, estimated_transform);
 
   ROS_INFO("Estimated trans: [%f, %f, %f]", (*estimated_translation)[0],
            (*estimated_translation)[1], (*estimated_translation)[2]);
@@ -156,6 +193,7 @@ int main(int argc, char** argv) {
            estimated_rot->y(), estimated_rot->z(), estimated_rot->w());
 
   std::string aligned_file_name = "aligned_" + sparse_file_name;
+  pcl::io::savePCDFile(aligned_file_name, *aligned_sparse, true);
 
   pcl::visualization::PCLVisualizer viewer;
   viewer.initCameraParameters();
@@ -174,34 +212,43 @@ int main(int argc, char** argv) {
       *(registration.rotation_history());
   std::vector<std::shared_ptr<Eigen::Vector3d>> translation_history =
       *(registration.translation_history());
-  viewer.registerKeyboardCallback(keyboardEventOccurred, (void*)&viewer);
-  while (!viewer.wasStopped()) {
-    if (iteration < rotation_history.size() && start == true) {
-      viewer.spinOnce(100);
-      boost::this_thread::sleep(boost::posix_time::seconds(0.5));
-      Eigen::Affine3d estimated_transform = Eigen::Affine3d::Identity();
-      estimated_transform.rotate(*(rotation_history[iteration]));
-      estimated_transform.pretranslate(*(translation_history[iteration]));
-      pcl::transformPointCloud(*sparse_cloud, *aligned_sparse,
-                               estimated_transform);
-      viewer.updatePointCloud(aligned_sparse, aligned_sparse_red,
-                              "aligned_sparse");
-      iteration++;
-    } else {
-      if (start) {
-        std::cout << "Video ended" << std::endl;
-        start = false;
-        viewer.spin();
-      } else {
-        viewer.spinOnce();
-      }
-    }
+  std::vector<Eigen::Affine3d> transformation_history =
+      registration.transformation_history();
+  geometry_msgs::Transform transformation;
+  ros::Rate loop_rate(10);
+  for (auto& trans : transformation_history) {
+    tf::transformEigenToMsg(trans, transformation);
+    trans_pub.publish(transformation);
+    loop_rate.sleep();
   }
-  for (auto rotation : rotation_history) {
-    ROS_INFO("Estimated rot: [%f, %f, %f, %f]", rotation->x(), rotation->y(),
-             rotation->z(), rotation->w());
-  }
-  pcl::io::savePCDFile(aligned_file_name, *aligned_sparse, true);
+  // }
+  // viewer.registerKeyboardCallback(keyboardEventOccurred, (void*)&viewer);
+  // while (!viewer.wasStopped()) {
+  //   if (iteration < rotation_history.size() && start == true) {
+  //     viewer.spinOnce(100);
+  //     boost::this_thread::sleep(boost::posix_time::seconds(0.5));
+  //     Eigen::Affine3d estimated_transform = Eigen::Affine3d::Identity();
+  //     estimated_transform.rotate(*(rotation_history[iteration]));
+  //     estimated_transform.pretranslate(*(translation_history[iteration]));
+  //     pcl::transformPointCloud(*sparse_cloud, *aligned_sparse,
+  //                              estimated_transform);
+  //     viewer.updatePointCloud(aligned_sparse, aligned_sparse_red,
+  //                             "aligned_sparse");
+  //     iteration++;
+  //   } else {
+  //     if (start) {
+  //       std::cout << "Video ended" << std::endl;
+  //       start = false;
+  //       viewer.spin();
+  //     } else {
+  //       viewer.spinOnce();
+  //     }
+  //   }
+  // }
+  // for (auto rotation : rotation_history) {
+  //   ROS_INFO("Estimated rot: [%f, %f, %f, %f]", rotation->x(), rotation->y(),
+  //            rotation->z(), rotation->w());
+  // }
 
   return 0;
 }
