@@ -13,7 +13,7 @@
 
 namespace point_cloud_registration {
 
-typedef std::vector<std::shared_ptr<WeightedErrorTerm>> WeightedErrorTermGroup;
+typedef std::vector<std::unique_ptr<WeightedErrorTerm>> WeightedErrorTermGroup;
 
 class PointCloudRegistration {
  public:
@@ -26,23 +26,13 @@ class PointCloudRegistration {
                          const double translation_initial_guess[3] =
                              PointCloudRegistration::default_translation);
 
-  void Solve(ceres::Solver::Options* options, ceres::Solver::Summary* Summary);
-  std::unique_ptr<Eigen::Quaternion<double>> rotation();
-  std::unique_ptr<Eigen::Vector3d> translation();
-  inline std::vector<std::shared_ptr<Eigen::Quaternion<double>>>*
-  rotation_history() {
-    return weight_updater_->rotation_history();
-  }
-  inline std::vector<std::shared_ptr<Eigen::Vector3d>>* translation_history() {
-    return weight_updater_->translation_history();
-  }
+  void solve(ceres::Solver::Options options, ceres::Solver::Summary* Summary);
+  Eigen::Affine3d transformation();
   std::vector<Eigen::Affine3d> transformation_history();
 
  private:
   std::vector<WeightedErrorTermGroup> weighted_error_terms_;
   std::unique_ptr<ceres::Problem> problem_;
-  ceres::Solver::Options problem_options_;
-  ceres::Solver::Summary problem_summary_;
   std::unique_ptr<WeightUpdater> weight_updater_;
   double rotation_[4];
   double translation_[3];

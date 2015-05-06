@@ -23,11 +23,12 @@ cs_add_library(${PROJECT_NAME}
   src/weight_updater.cc
   src/probabilistic_weights.cc)
 
-cs_add_executable(point_cloud_registration_simulator 
-  src/point_cloud_registration_simulator.cc)
+# cs_add_executable(point_cloud_registration_simulator 
+#   src/point_cloud_registration_simulator.cc)
 
 cs_add_executable(point_cloud_registration_ros src/point_cloud_registration_ros.cc)
 cs_add_executable(registration_visualizer src/registration_visualizer.cc)
+cs_add_executable(icp_registration src/icp_registration.cc)
 
 # catkin_add_gtest(${PROJECT_NAME}_test
 #   test/test_main.cc
@@ -36,13 +37,13 @@ cs_add_executable(registration_visualizer src/registration_visualizer.cc)
 
 # target_link_libraries(${PROJECT_NAME}_test ${PROJECT_NAME})
 
-target_link_libraries(point_cloud_registration_simulator 
-  ${CERES_LIBRARIES}
-  ${PROJECT_NAME}
-  dense_sparse_simulator 
-  ${catkin_LIBRARIES} 
-  ${Boost_LIBRARIES} 
-  ${VTK_LIBRARIES})
+# target_link_libraries(point_cloud_registration_simulator 
+#   ${CERES_LIBRARIES}
+#   ${PROJECT_NAME}
+#   dense_sparse_simulator 
+#   ${catkin_LIBRARIES} 
+#   ${Boost_LIBRARIES} 
+#   ${VTK_LIBRARIES})
 
 target_link_libraries(point_cloud_registration_ros
   ${CERES_LIBRARIES}
@@ -52,6 +53,7 @@ target_link_libraries(point_cloud_registration_ros
   ${VTK_LIBRARIES})
 
 target_link_libraries(registration_visualizer ${catkin_LIBRARIES})
+target_link_libraries(icp_registration ${catkin_LIBRARIES})
 
 cs_install()
 cs_export()

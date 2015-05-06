@@ -108,6 +108,9 @@ int main(int argc, char** argv) {
     ROS_INFO("Removed %d NaN points from dense cloud", tmp_indices.size());
   }
 
+  std::string log_file_name;
+  ros::param::param<std::string>("~log_file_name", log_file_name, "");
+
     pcl::PointCloud<PointType>::Ptr filtered_sparse_cloud(
       new pcl::PointCloud<PointType>());
   pcl::PointCloud<PointType>::Ptr filtered_dense_cloud(
@@ -133,24 +136,22 @@ int main(int argc, char** argv) {
   extract.setNegative (true);
   extract.filter (*dense_cloud);
 
+  if (sparse_filter_size > 0) {
+    filter.setInputCloud(sparse_cloud);
+    filter.setLeafSize(sparse_filter_size, sparse_filter_size,
+                       sparse_filter_size);
+    filter.filter(*filtered_sparse_cloud);
+  } else {
+    filtered_sparse_cloud = sparse_cloud;
+  }
 
-  if (sparse_filter_size > 0){
-  filter.setInputCloud(sparse_cloud);
-  filter.setLeafSize(sparse_filter_size, sparse_filter_size,
-                     sparse_filter_size);
-  filter.filter(*filtered_sparse_cloud);
-}
-else{
-  filtered_sparse_cloud = sparse_cloud;
-}
-
-if(dense_filter_size > 0){
-  filter.setInputCloud(dense_cloud);
-  filter.setLeafSize(dense_filter_size, dense_filter_size,
-                     dense_filter_size);
-  filter.filter(*filtered_dense_cloud);
-}else{ filtered_dense_cloud = dense_cloud;}
-
+  if (dense_filter_size > 0) {
+    filter.setInputCloud(dense_cloud);
+    filter.setLeafSize(dense_filter_size, dense_filter_size, dense_filter_size);
+    filter.filter(*filtered_dense_cloud);
+  } else {
+    filtered_dense_cloud = dense_cloud;
+  }
 
   pcl::KdTreeFLANN<PointType> kdtree;
   kdtree.setInputCloud(filtered_dense_cloud);
@@ -173,24 +174,22 @@ if(dense_filter_size > 0){
   options.minimizer_progress_to_stdout = true;
   options.max_num_iterations = std::numeric_limits<int>::max();
   ceres::Solver::Summary summary;
-  registration.Solve(&options, &summary);
+  registration.solve(options, &summary);
   ROS_INFO_STREAM(summary.FullReport());
 
-  std::unique_ptr<Eigen::Quaternion<double>> estimated_rot =
-      registration.rotation();
-  std::unique_ptr<Eigen::Vector3d> estimated_translation =
-      registration.translation();
-  Eigen::Affine3d estimated_transform = Eigen::Affine3d::Identity();
-  estimated_transform.rotate(*estimated_rot);
-  estimated_transform.pretranslate(Eigen::Vector3d(*estimated_translation));
+  auto estimated_transform = registration.transformation();
+  auto estimated_translation = estimated_transform.translation();
+  auto estimated_rotation =
+      Eigen::Quaternion<double>(estimated_transform.rotation());
   pcl::PointCloud<PointType>::Ptr aligned_sparse(
       new pcl::PointCloud<PointType>(*sparse_cloud));
   pcl::transformPointCloud(*sparse_cloud, *aligned_sparse, estimated_transform);
 
-  ROS_INFO("Estimated trans: [%f, %f, %f]", (*estimated_translation)[0],
-           (*estimated_translation)[1], (*estimated_translation)[2]);
-  ROS_INFO("Estimated rot: [%f, %f, %f, %f]", estimated_rot->x(),
-           estimated_rot->y(), estimated_rot->z(), estimated_rot->w());
+  ROS_INFO("Estimated trans: [%f, %f, %f]", estimated_translation[0],
+           estimated_translation[1], estimated_translation[2]);
+  ROS_INFO("Estimated rot: [%f, %f, %f, %f]", estimated_rotation.w(),
+           estimated_rotation.x(), estimated_rotation.y(),
+           estimated_rotation.z());
 
   std::string aligned_file_name = "aligned_" + sparse_file_name;
   pcl::io::savePCDFile(aligned_file_name, *aligned_sparse, true);
@@ -207,48 +206,43 @@ if(dense_filter_size > 0){
   viewer.addPointCloud<PointType>(aligned_sparse, aligned_sparse_red,
                                   "aligned_sparse", v0);
   viewer.addPointCloud<PointType>(dense_cloud, dense_blue, "dense", v0);
-  int iteration = 0;
-  std::vector<std::shared_ptr<Eigen::Quaternion<double>>> rotation_history =
-      *(registration.rotation_history());
-  std::vector<std::shared_ptr<Eigen::Vector3d>> translation_history =
-      *(registration.translation_history());
-  std::vector<Eigen::Affine3d> transformation_history =
-      registration.transformation_history();
-  geometry_msgs::Transform transformation;
-  ros::Rate loop_rate(10);
-  for (auto& trans : transformation_history) {
-    tf::transformEigenToMsg(trans, transformation);
-    trans_pub.publish(transformation);
-    loop_rate.sleep();
+
+  auto transformation_history = registration.transformation_history();
+
+  std::ofstream log_file;
+  if (log_file_name != "") {
+    log_file.open(log_file_name);
+    if (log_file.is_open()) {
+      log_file << "Sparse cloud: " << sparse_file_name
+               << " with voxel filter of size: " << sparse_filter_size
+               << std::endl;
+      log_file << "Dense cloud: " << dense_file_name
+               << " with voxel filter of size: " << dense_filter_size
+               << std::endl;
+      if (use_gaussian) {
+        log_file << "Using a gaussian" << std::endl;
+      } else {
+        log_file << "Using t-distribution with " << dof << " dof" << std::endl;
+      }
+      log_file << "Transformation history: " << std::endl;
+      for (auto& transformation : transformation_history) {
+        auto estimated_translation = transformation.translation();
+        auto estimated_rotation =
+            Eigen::Quaternion<double>(transformation.rotation());
+        log_file << estimated_translation[0] << "\t" << estimated_translation[1]
+                 << "\t" << estimated_translation[2] << "\t";
+        log_file << estimated_rotation.w() << "\t" << estimated_rotation.x()
+                 << "\t" << estimated_rotation.y() << "\t"
+                 << estimated_rotation.z() << "\n";
+      }
+      log_file.close();
+    }
   }
-  // }
-  // viewer.registerKeyboardCallback(keyboardEventOccurred, (void*)&viewer);
-  // while (!viewer.wasStopped()) {
-  //   if (iteration < rotation_history.size() && start == true) {
-  //     viewer.spinOnce(100);
-  //     boost::this_thread::sleep(boost::posix_time::seconds(0.5));
-  //     Eigen::Affine3d estimated_transform = Eigen::Affine3d::Identity();
-  //     estimated_transform.rotate(*(rotation_history[iteration]));
-  //     estimated_transform.pretranslate(*(translation_history[iteration]));
-  //     pcl::transformPointCloud(*sparse_cloud, *aligned_sparse,
-  //                              estimated_transform);
-  //     viewer.updatePointCloud(aligned_sparse, aligned_sparse_red,
-  //                             "aligned_sparse");
-  //     iteration++;
-  //   } else {
-  //     if (start) {
-  //       std::cout << "Video ended" << std::endl;
-  //       start = false;
-  //       viewer.spin();
-  //     } else {
-  //       viewer.spinOnce();
-  //     }
-  //   }
-  // }
-  // for (auto rotation : rotation_history) {
-  //   ROS_INFO("Estimated rot: [%f, %f, %f, %f]", rotation->x(), rotation->y(),
-  //            rotation->z(), rotation->w());
-  // }
+
+  while (!viewer.wasStopped()) {
+    viewer.spinOnce(100);
+    boost::this_thread::sleep(boost::posix_time::microseconds(100000));
+  }
 
   return 0;
 }

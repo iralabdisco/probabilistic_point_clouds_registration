@@ -11,31 +11,25 @@
 #include "point_cloud_registration/weighted_error_term.h"
 
 namespace point_cloud_registration {
-typedef std::vector<std::shared_ptr<WeightedErrorTerm>> WeightedErrorTermGroup;
+typedef std::vector<std::unique_ptr<WeightedErrorTerm>> WeightedErrorTermGroup;
 
 class WeightUpdater : public ceres::IterationCallback {
  public:
-  explicit WeightUpdater(
-      std::vector<WeightedErrorTermGroup>* weighted_error_terms, double dof,
+  explicit WeightUpdater(int num_groups, double dof,
       double* rotation, double* translation);
   ceres::CallbackReturnType operator()(const ceres::IterationSummary& summary);
-
-  inline std::vector<std::shared_ptr<Eigen::Quaternion<double>>>*
-  rotation_history() {
-    return &rotation_history_;
-  }
-
-  inline std::vector<std::shared_ptr<Eigen::Vector3d>>* translation_history() {
-    return &translation_history_;
+  void addErrorTerm(int index,
+                            std::unique_ptr<WeightedErrorTerm> error_term);
+  std::vector<Eigen::Affine3d> transformation_history() {
+    return transformation_history_;
   }
 
  private:
-  std::vector<WeightedErrorTermGroup>* weighted_error_terms_;
+  std::vector<WeightedErrorTermGroup> weighted_error_terms_;
   ProbabilisticWeights weightCalculator_;
   double* rotation_;
   double* translation_;
-  std::vector<std::shared_ptr<Eigen::Quaternion<double>>> rotation_history_;
-  std::vector<std::shared_ptr<Eigen::Vector3d>> translation_history_;
+  std::vector<Eigen::Affine3d> transformation_history_;
 };
 }  // namespace point_cloud_registration
 

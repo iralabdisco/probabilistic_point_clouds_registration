@@ -25,58 +25,37 @@ PointCloudRegistration::PointCloudRegistration(
   // prob_opt.loss_function_ownership = ceres::DO_NOT_TAKE_OWNERSHIP;
   /*prob_opt.local_parameterization_ownership = ceres::DO_NOT_TAKE_OWNERSHIP;*/
   problem_.reset(new ceres::Problem());
+  weight_updater_.reset(
+      new WeightUpdater(data_association.size(), dof, rotation_, translation_));
   for (size_t i = 0; i < data_association.size(); i++) {
     for (size_t j = 0; j < data_association[i].size(); j++) {
-      std::shared_ptr<WeightedErrorTerm> error_term(new WeightedErrorTerm(
+      std::unique_ptr<WeightedErrorTerm> error_term(new WeightedErrorTerm(
           source_cloud[i], target_cloud[data_association[i][j]]));
-      weighted_error_terms_[i].push_back(error_term);
       problem_->AddResidualBlock(error_term->costFunction(),
                                  error_term->weight(), rotation_, translation_);
+      weight_updater_->addErrorTerm(i, std::move(error_term));
     }
   }
-  weight_updater_.reset(
-      new WeightUpdater(&weighted_error_terms_, dof, rotation_, translation_));
   (*weight_updater_)(ceres::IterationSummary());
 }
 
-void PointCloudRegistration::Solve(ceres::Solver::Options* options,
+void PointCloudRegistration::solve(ceres::Solver::Options options,
                                    ceres::Solver::Summary* summary) {
-  options->callbacks.push_back(weight_updater_.get());
-  options->update_state_every_iteration = true;
-  ceres::Solve(*options, problem_.get(), summary);
+  options.callbacks.push_back(weight_updater_.get());
+  options.update_state_every_iteration = true;
+  ceres::Solve(options, problem_.get(), summary);
 }
 
-std::unique_ptr<Eigen::Quaternion<double>> PointCloudRegistration::rotation() {
-  std::unique_ptr<Eigen::Quaternion<double>> estimated_rot(
-      new Eigen::Quaternion<double>(rotation_[0], rotation_[1], rotation_[2],
-                                    rotation_[3]));  // Needed becouse eigen
-                                                     // stores quaternion as
-                                                     // [x,y,z,w] instead
-                                                     // than [w,x,y,z]
-  estimated_rot->normalize();
-  return estimated_rot;
-}
-
-std::unique_ptr<Eigen::Vector3d> PointCloudRegistration::translation() {
-  std::unique_ptr<Eigen::Vector3d> estimated_translation(
-      new Eigen::Vector3d(translation_));
-  return estimated_translation;
+Eigen::Affine3d PointCloudRegistration::transformation() {
+  Eigen::Affine3d affine = Eigen::Affine3d::Identity();
+  affine.rotate(Eigen::Quaternion<double>(rotation_[0], rotation_[1],
+                                          rotation_[2], rotation_[3]));
+  affine.pretranslate(Eigen::Vector3d(translation_));
+  return affine;
 }
 
 std::vector<Eigen::Affine3d> PointCloudRegistration::transformation_history() {
-  std::vector<std::shared_ptr<Eigen::Vector3d>> trans_hist =
-      *(weight_updater_->translation_history());
-  std::vector<std::shared_ptr<Eigen::Quaternion<double>>> rot_hist =
-      *(weight_updater_->rotation_history());
-  std::vector<Eigen::Affine3d> ret;
-  Eigen::Affine3d affine;
-  for (std::size_t i = 0; i < rot_hist.size(); i++) {
-    affine.setIdentity();
-    affine.rotate(*(rot_hist[i]));
-    affine.pretranslate(*(trans_hist[i]));
-    ret.push_back(affine);
-  }
-  return ret;
+  return weight_updater_->transformation_history();
 }
 
 }  // namespace point_cloud_registration

@@ -6,22 +6,19 @@
 
 namespace point_cloud_registration {
 
-WeightUpdater::WeightUpdater(
-    std::vector<WeightedErrorTermGroup>* weighted_error_terms, double dof,
-    double* rotation, double* translation)
-    : weighted_error_terms_(weighted_error_terms),
+WeightUpdater::WeightUpdater(int num_groups, double dof, double* rotation,
+                             double* translation)
+    : weighted_error_terms_(num_groups),
       weightCalculator_(dof, ReprojectionError::kResiduals),
-      rotation_history_(),
-      translation_history_(),
       rotation_(rotation),
       translation_(translation) {}
 
 ceres::CallbackReturnType WeightUpdater::operator()(
     const ceres::IterationSummary& summary) {
-  std::vector<std::vector<double>> residuals(weighted_error_terms_->size(),
+  std::vector<std::vector<double>> residuals(weighted_error_terms_.size(),
                                              std::vector<double>());
-  for (std::size_t i = 0; i < weighted_error_terms_->size(); i++) {
-    for (auto error_term : weighted_error_terms_->at(i)) {
+  for (std::size_t i = 0; i < weighted_error_terms_.size(); i++) {
+    for (auto& error_term : weighted_error_terms_.at(i)) {
       residuals[i].push_back(error_term->squaredError());
     }
   }
@@ -30,19 +27,25 @@ ceres::CallbackReturnType WeightUpdater::operator()(
     weights[i] = std::vector<double>(residuals[i].size());
   }
   weightCalculator_.updateWeights(residuals, &weights);
-  for (std::size_t i = 0; i < weighted_error_terms_->size(); i++) {
-    for (std::size_t j = 0; j < weighted_error_terms_->at(i).size(); j++) {
-      (*weighted_error_terms_)[i][j]->updateWeight(weights[i][j]);
+  for (std::size_t i = 0; i < weighted_error_terms_.size(); i++) {
+    for (std::size_t j = 0; j < weighted_error_terms_.at(i).size(); j++) {
+      (weighted_error_terms_)[i][j]->updateWeight(weights[i][j]);
     }
   }
-  std::shared_ptr<Eigen::Quaternion<double>> estimated_rot(
-      new Eigen::Quaternion<double>(rotation_[0], rotation_[1], rotation_[2],
-                                    rotation_[3]));
-  estimated_rot->normalize();
-  rotation_history_.push_back(std::move(estimated_rot));
-  std::shared_ptr<Eigen::Vector3d> estimated_translation(
-      new Eigen::Vector3d(translation_));
-  translation_history_.push_back(std::move(estimated_translation));
+  Eigen::Quaternion<double> estimated_rot(rotation_[0], rotation_[1],
+                                          rotation_[2], rotation_[3]);
+  estimated_rot.normalize();
+  Eigen::Vector3d estimated_translation(translation_);
+  Eigen::Affine3d transformation = Eigen::Affine3d::Identity();
+  transformation.rotate(estimated_rot);
+  transformation.pretranslate(estimated_translation);
+  transformation_history_.push_back(transformation);
   return ceres::SOLVER_CONTINUE;
 }
+
+void WeightUpdater::addErrorTerm(
+    int index, std::unique_ptr<WeightedErrorTerm> error_term) {
+  weighted_error_terms_[index].push_back(std::move(error_term));
+}
+
 }  // namespace point_cloud_registration
