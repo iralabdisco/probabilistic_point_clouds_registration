@@ -5,6 +5,9 @@
 #include <vector>
 
 #include <ros/ros.h>
+#include <boost/archive/text_oarchive.hpp>
+#include <boost/serialization/vector.hpp>
+
 #include <boost/make_shared.hpp>
 #include <boost/shared_ptr.hpp>
 #include <pcl/common/transforms.h>
@@ -111,7 +114,7 @@ int main(int argc, char** argv) {
   std::string log_file_name;
   ros::param::param<std::string>("~log_file_name", log_file_name, "");
 
-    pcl::PointCloud<PointType>::Ptr filtered_sparse_cloud(
+  pcl::PointCloud<PointType>::Ptr filtered_sparse_cloud(
       new pcl::PointCloud<PointType>());
   pcl::PointCloud<PointType>::Ptr filtered_dense_cloud(
       new pcl::PointCloud<PointType>());
@@ -134,7 +137,7 @@ int main(int argc, char** argv) {
   extract.setInputCloud (dense_cloud);
   extract.setIndices (inliers);
   extract.setNegative (true);
-  extract.filter (*dense_cloud);
+  // extract.filter (*dense_cloud);
 
   if (sparse_filter_size > 0) {
     filter.setInputCloud(sparse_cloud);
@@ -164,7 +167,6 @@ int main(int argc, char** argv) {
     ROS_DEBUG("Found %d correspondences", results.size());
     correspondences[i] = results;
   }
-
   point_cloud_registration::PointCloudRegistration registration(
       *filtered_sparse_cloud, *filtered_dense_cloud, correspondences, dof);
 
@@ -173,6 +175,7 @@ int main(int argc, char** argv) {
   options.use_nonmonotonic_steps = true;
   options.minimizer_progress_to_stdout = true;
   options.max_num_iterations = std::numeric_limits<int>::max();
+  // options.line_search_direction_type = ceres::STEEPEST_DESCENT;
   ceres::Solver::Summary summary;
   registration.solve(options, &summary);
   ROS_INFO_STREAM(summary.FullReport());
@@ -182,7 +185,7 @@ int main(int argc, char** argv) {
   auto estimated_rotation =
       Eigen::Quaternion<double>(estimated_transform.rotation());
   pcl::PointCloud<PointType>::Ptr aligned_sparse(
-      new pcl::PointCloud<PointType>(*sparse_cloud));
+      new pcl::PointCloud<PointType>());
   pcl::transformPointCloud(*sparse_cloud, *aligned_sparse, estimated_transform);
 
   ROS_INFO("Estimated trans: [%f, %f, %f]", estimated_translation[0],
@@ -200,7 +203,7 @@ int main(int argc, char** argv) {
   viewer.createViewPort(0, 0.0, 1.0, 1.0, v0);
   viewer.setBackgroundColor(0, 0, 0, v0);
   pcl::visualization::PointCloudColorHandlerCustom<PointType>
-      aligned_sparse_red(sparse_cloud, 255, 0, 0);
+      aligned_sparse_red(aligned_sparse, 255, 0, 0);
   pcl::visualization::PointCloudColorHandlerCustom<PointType> dense_blue(
       dense_cloud, 0, 0, 255);
   viewer.addPointCloud<PointType>(aligned_sparse, aligned_sparse_red,
@@ -238,7 +241,11 @@ int main(int argc, char** argv) {
       log_file.close();
     }
   }
-
+  {
+    std::ofstream data_assoc_file("data_assoc_" + log_file_name);
+    boost::archive::text_oarchive data_assoc_archive(data_assoc_file);
+    data_assoc_archive << correspondences;
+  }
   while (!viewer.wasStopped()) {
     viewer.spinOnce(100);
     boost::this_thread::sleep(boost::posix_time::microseconds(100000));
