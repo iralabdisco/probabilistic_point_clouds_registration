@@ -1,5 +1,6 @@
 #include "point_cloud_registration/weight_updater.h"
 
+#include <fstream>
 #include <vector>
 
 #include "point_cloud_registration/reprojection_error.h"
@@ -32,6 +33,29 @@ ceres::CallbackReturnType WeightUpdater::operator()(
       (weighted_error_terms_)[i][j]->updateWeight(weights[i][j]);
     }
   }
+
+  std::ofstream weights_file;
+  std::ofstream residuals_file;
+  weights_file.open(std::to_string(summary.iteration) + "_weight_history.txt");
+  residuals_file.open(std::to_string(summary.iteration) +
+                      "_residual_history.txt");
+  for (auto weights_group : weights) {
+    for (auto weight : weights_group) {
+      weights_file << weight << ",";
+    }
+    weights_file << std::endl;
+  }
+  weights_file.close();
+
+  for (auto residuals_group : residuals) {
+    for (auto residual : residuals_group) {
+      residuals_file << residual << ",";
+    }
+    residuals_file << std::endl;
+  }
+  residuals_file.close();
+
+
   Eigen::Quaternion<double> estimated_rot(rotation_[0], rotation_[1],
                                           rotation_[2], rotation_[3]);
   estimated_rot.normalize();

@@ -6,8 +6,9 @@
 
 #include <ros/ros.h>
 #include <boost/archive/text_oarchive.hpp>
+#include <boost/archive/text_iarchive.hpp>
 #include <boost/serialization/vector.hpp>
-
+#include "point_cloud_registration/EigenMatrixSerialize.h"
 #include <boost/make_shared.hpp>
 #include <boost/shared_ptr.hpp>
 #include <pcl/common/transforms.h>
@@ -56,7 +57,7 @@ int main(int argc, char** argv) {
   ros::param::param<int>("~dim_neighborhood", dim_neighborhood, 10);
   ROS_INFO("The dimension of neighborhood: %d", dim_neighborhood);
 
-  bool use_gaussian;
+  bool use_gaussian, previous;
   double dof;
 
   ros::param::param<bool>("~use_gaussian", use_gaussian, false);
@@ -111,6 +112,22 @@ int main(int argc, char** argv) {
     ROS_INFO("Removed %d NaN points from dense cloud", tmp_indices.size());
   }
 
+  Eigen::Affine3d previous_transform;
+  ros::param::param<bool>("~previous", previous, false);
+  if (previous) {
+    std::ifstream previous_matrix_file(sparse_file_name+"matrix.dat");
+    if(previous_matrix_file.good()){
+      ROS_INFO("Loading previous transform matrix");
+      boost::archive::text_iarchive previous_matrix(previous_matrix_file);
+      previous_matrix >> previous_transform.matrix();
+      ROS_INFO_STREAM("Previous transform: " << previous_transform.matrix());
+    }
+    else{
+      ROS_INFO("Error opening previous transform, closing...");
+      exit(0);
+    }
+  }
+
   std::string log_file_name;
   ros::param::param<std::string>("~log_file_name", log_file_name, "");
 
@@ -120,23 +137,23 @@ int main(int argc, char** argv) {
       new pcl::PointCloud<PointType>());
   pcl::VoxelGrid<PointType> filter;
 
-  pcl::ModelCoefficients::Ptr coefficients (new pcl::ModelCoefficients);
-  pcl::PointIndices::Ptr inliers (new pcl::PointIndices);
+  pcl::ModelCoefficients::Ptr coefficients(new pcl::ModelCoefficients);
+  pcl::PointIndices::Ptr inliers(new pcl::PointIndices);
   // Create the segmentation object
   pcl::SACSegmentation<pcl::PointXYZ> plane_segmentation;
   // Optional
-  plane_segmentation.setOptimizeCoefficients (true);
+  plane_segmentation.setOptimizeCoefficients(true);
   // Mandatory
-  plane_segmentation.setModelType (pcl::SACMODEL_PLANE);
-  plane_segmentation.setMethodType (pcl::SAC_RANSAC);
-  plane_segmentation.setDistanceThreshold (1);
+  plane_segmentation.setModelType(pcl::SACMODEL_PLANE);
+  plane_segmentation.setMethodType(pcl::SAC_RANSAC);
+  plane_segmentation.setDistanceThreshold(1);
 
-  plane_segmentation.setInputCloud (dense_cloud);
-  plane_segmentation.segment (*inliers, *coefficients);
+  plane_segmentation.setInputCloud(dense_cloud);
+  plane_segmentation.segment(*inliers, *coefficients);
   pcl::ExtractIndices<pcl::PointXYZ> extract;
-  extract.setInputCloud (dense_cloud);
-  extract.setIndices (inliers);
-  extract.setNegative (true);
+  extract.setInputCloud(dense_cloud);
+  extract.setIndices(inliers);
+  extract.setNegative(true);
   // extract.filter (*dense_cloud);
 
   if (sparse_filter_size > 0) {
@@ -167,14 +184,23 @@ int main(int argc, char** argv) {
     ROS_DEBUG("Found %d correspondences", results.size());
     correspondences[i] = results;
   }
+
+/*  std::random_device rd;
+  std::mt19937 generator(rd());
+  std::uniform_real_distribution<double> unif_distribution(-0.5, 0.5);*/
+  const double initial_rotation[4] = {1, 0, 0, 0};
+  const double initial_translation[3] = {0, 0, 0};
   point_cloud_registration::PointCloudRegistration registration(
-      *filtered_sparse_cloud, *filtered_dense_cloud, correspondences, dof);
+      *filtered_sparse_cloud, *filtered_dense_cloud, correspondences, dof,
+      initial_rotation, initial_translation);
 
   ceres::Solver::Options options;
   options.linear_solver_type = ceres::SPARSE_NORMAL_CHOLESKY;
   options.use_nonmonotonic_steps = true;
   options.minimizer_progress_to_stdout = true;
   options.max_num_iterations = std::numeric_limits<int>::max();
+  options.function_tolerance = 10e-5;
+  options.num_threads = 8;
   // options.line_search_direction_type = ceres::STEEPEST_DESCENT;
   ceres::Solver::Summary summary;
   registration.solve(options, &summary);
@@ -186,13 +212,21 @@ int main(int argc, char** argv) {
       Eigen::Quaternion<double>(estimated_transform.rotation());
   pcl::PointCloud<PointType>::Ptr aligned_sparse(
       new pcl::PointCloud<PointType>());
+  pcl::PointCloud<PointType>::Ptr aligned_filtered_sparse(
+      new pcl::PointCloud<PointType>());
   pcl::transformPointCloud(*sparse_cloud, *aligned_sparse, estimated_transform);
+  pcl::transformPointCloud(*sparse_cloud, *aligned_filtered_sparse,
+                           estimated_transform);
+  if (previous) {
+    estimated_transform = estimated_transform * previous_transform;
+  }
 
-  ROS_INFO("Estimated trans: [%f, %f, %f]", estimated_translation[0],
+  ROS_INFO("Estimated trans: [%f\t %f\t %f]", estimated_translation[0],
            estimated_translation[1], estimated_translation[2]);
-  ROS_INFO("Estimated rot: [%f, %f, %f, %f]", estimated_rotation.w(),
+  ROS_INFO("Estimated rot: [%f\t %f\t %f\t %f]", estimated_rotation.w(),
            estimated_rotation.x(), estimated_rotation.y(),
            estimated_rotation.z());
+  ROS_INFO_STREAM(estimated_transform.matrix());
 
   std::string aligned_file_name = "aligned_" + sparse_file_name;
   pcl::io::savePCDFile(aligned_file_name, *aligned_sparse, true);
@@ -246,10 +280,31 @@ int main(int argc, char** argv) {
     boost::archive::text_oarchive data_assoc_archive(data_assoc_file);
     data_assoc_archive << correspondences;
   }
+  {
+    std::ofstream matrix_file(aligned_file_name + "matrix.dat");
+    boost::archive::text_oarchive matrix_archive(matrix_file);
+    matrix_archive << estimated_transform.matrix();
+  }
+  std::ofstream residuals_file;
+  residuals_file.open("residuals.txt");
+  std::vector<std::vector<Eigen::Vector3d>> residuals(correspondences.size());
+  for (size_t i = 0; i < correspondences.size(); i++) {
+    for (size_t j = 0; j < correspondences[i].size(); j++) {
+      Eigen::Vector3d res;
+      res[0] = (*aligned_filtered_sparse)[i].x -
+               (*filtered_dense_cloud)[correspondences[i][j]].x;
+      res[1] = (*aligned_filtered_sparse)[i].y -
+               (*filtered_dense_cloud)[correspondences[i][j]].y;
+      res[2] = (*aligned_filtered_sparse)[i].z -
+               (*filtered_dense_cloud)[correspondences[i][j]].z;
+      residuals_file << res[0] << " , " << res[1] << " , " << res[2] << " ; ";
+    }
+    residuals_file << std::endl;
+  }
+  residuals_file.close();
   while (!viewer.wasStopped()) {
     viewer.spinOnce(100);
     boost::this_thread::sleep(boost::posix_time::microseconds(100000));
   }
-
   return 0;
 }

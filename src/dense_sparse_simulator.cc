@@ -108,12 +108,12 @@ void DenseSparseSimulator<PointType>::sparseRandomTransform(
   denseToSparseTransform_ = Eigen::Affine3d::Identity();
   std::uniform_real_distribution<double> real_distribution(-traslation_range,
                                                            traslation_range);
-  denseToSparseTransform_.translation() << real_distribution(generator),
+  /*denseToSparseTransform_.translation() << real_distribution(generator),
       real_distribution(generator), real_distribution(generator);
   Eigen::Quaternion<double> rotation(
       real_distribution(generator), real_distribution(generator),
       real_distribution(generator), real_distribution(generator));
-  denseToSparseTransform_.rotate(rotation.normalized());
+  denseToSparseTransform_.rotate(rotation.normalized());*/
   pcl::transformPointCloud(tmp_cloud, *sparse_map_, denseToSparseTransform_);
 }
 

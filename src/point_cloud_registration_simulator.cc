@@ -78,7 +78,7 @@ int main(int argc, char** argv) {
   options.max_num_consecutive_invalid_steps = 200;
   options.max_num_iterations = std::numeric_limits<int>::max();
   ceres::Solver::Summary summary;
-  registration.Solve(&options, &summary);
+  registration.solve(options, &summary);
   ROS_INFO_STREAM(summary.FullReport());
 
   pcl::visualization::PointCloudColorHandlerCustom<pcl::PointXYZ> dense_blue(
@@ -90,18 +90,18 @@ int main(int argc, char** argv) {
 
   Eigen::Affine3d real_transform =
       simulator->denseToSparseTransform().inverse();
-  std::unique_ptr<Eigen::Quaternion<double>> estimated_rot =
-      registration.rotation();
-  std::unique_ptr<Eigen::Vector3d> estimated_translation =
-      registration.translation();
+  Eigen::Quaternion<double> estimated_rot =
+      Eigen::Quaternion<double>(registration.transformation().rotation());
+  Eigen::Vector3d estimated_translation =
+      registration.transformation().translation();
 
   Eigen::Affine3d estimated_transform = Eigen::Affine3d::Identity();
-  estimated_transform.rotate(*estimated_rot);
-  estimated_transform.pretranslate(*estimated_translation);
+  estimated_transform.rotate(estimated_rot);
+  estimated_transform.pretranslate(estimated_translation);
   pcl::PointCloud<PointType>::Ptr aligned_sparse(
       new pcl::PointCloud<PointType>());
-  pcl::transformPointCloud(*sparse_map, *aligned_sparse, estimated_transform);
-  pcl::io::savePCDFile("sparse_cloud_5000.pcd", *aligned_sparse, true);
+  pcl::transformPointCloud(*sparse_map, *aligned_sparse, real_transform);
+  pcl::io::savePCDFile("sparse_cloud.pcd", *aligned_sparse, true);
 
   int v1(0);
   viewer.createViewPort(0.5, 0.0, 1.0, 1.0, v1);
@@ -117,14 +117,14 @@ int main(int argc, char** argv) {
       Eigen::Quaternion<double>(real_transform.rotation());
 
   ROS_INFO("\nEstimated trans\t| Real trans\n%f\t| %f\n%f\t| %f\n%f\t| %f\n",
-           (*estimated_translation)[0], real_trans[0],
-           (*estimated_translation)[1], real_trans[1],
-           (*estimated_translation)[2], real_trans[2]);
+           (estimated_translation)[0], real_trans[0],
+           (estimated_translation)[1], real_trans[1],
+           (estimated_translation)[2], real_trans[2]);
 
   ROS_INFO(
       "\nEstimated rot\t| Real rot\n%f\t| %f\n%f\t| %f\n%f\t| %f\n%f\t| %f\n",
-      estimated_rot->x(), real_rot.x(), estimated_rot->y(), real_rot.y(),
-      estimated_rot->z(), real_rot.z(), estimated_rot->w(), real_rot.w());
+      estimated_rot.x(), real_rot.x(), estimated_rot.y(), real_rot.y(),
+      estimated_rot.z(), real_rot.z(), estimated_rot.w(), real_rot.w());
 
   while (!viewer.wasStopped()) {
     viewer.spinOnce(100);

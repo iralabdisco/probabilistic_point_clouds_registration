@@ -4,7 +4,8 @@
 #include <pcl/registration/icp.h>
 #include <ros/ros.h>
 #include <pcl/filters/filter.h>
-
+#include <pcl/filters/voxel_grid.h>
+#include <Eigen/Geometry>
 
 typedef pcl::PointXYZ PointType;
 
@@ -40,15 +41,58 @@ int main(int argc, char** argv) {
     ROS_INFO("Removed %d NaN points from dense cloud", tmp_indices.size());
   }
 
+  double sparse_filter_size;
+  ros::param::param<double>("~sparse_filter_size", sparse_filter_size, 0);
+  ROS_INFO("The leaf size of the voxel filter of the sparse cloud : %f",
+           sparse_filter_size);
+
+  double dense_filter_size;
+  ros::param::param<double>("~dense_filter_size", dense_filter_size, 0);
+  ROS_INFO("The leaf size of the voxel filter of the dense cloud : %f",
+           dense_filter_size);
+  double radius;
+  ros::param::param<double>("~radius", radius, 3);
+  ROS_INFO("Radius of the neighborhood search: %f", radius);
+
+  pcl::PointCloud<PointType>::Ptr filtered_sparse_cloud(
+      new pcl::PointCloud<PointType>());
+  pcl::PointCloud<PointType>::Ptr filtered_dense_cloud(
+      new pcl::PointCloud<PointType>());
+  pcl::VoxelGrid<PointType> filter;
+
+  if (sparse_filter_size > 0) {
+    filter.setInputCloud(sparse_cloud);
+    filter.setLeafSize(sparse_filter_size, sparse_filter_size,
+                       sparse_filter_size);
+    filter.filter(*filtered_sparse_cloud);
+  } else {
+    filtered_sparse_cloud = sparse_cloud;
+  }
+
+  if (dense_filter_size > 0) {
+    filter.setInputCloud(dense_cloud);
+    filter.setLeafSize(dense_filter_size, dense_filter_size, dense_filter_size);
+    filter.filter(*filtered_dense_cloud);
+  } else {
+    filtered_dense_cloud = dense_cloud;
+  }
   pcl::IterativeClosestPoint<pcl::PointXYZ, pcl::PointXYZ> icp;
-  icp.setInputCloud(sparse_cloud);
-  icp.setInputTarget(dense_cloud);
+  icp.setInputCloud(filtered_sparse_cloud);
+  icp.setInputTarget(filtered_dense_cloud);
   pcl::PointCloud<pcl::PointXYZ> Final;
-  icp.setMaxCorrespondenceDistance (40);
+  icp.setMaxCorrespondenceDistance(radius);
   icp.align(Final);
   std::cout << "has converged:" << icp.hasConverged()
             << " score: " << icp.getFitnessScore() << std::endl;
-  std::cout << icp.getFinalTransformation() << std::endl;
+  Eigen::Affine3f final_transform(icp.getFinalTransformation());
+  auto estimated_translation = final_transform.translation();
+  auto estimated_rotation =
+      Eigen::Quaternion<float>(final_transform.rotation());
+  ROS_INFO("Estimated trans: [%f\t %f\t %f]", estimated_translation[0],
+           estimated_translation[1], estimated_translation[2]);
+  ROS_INFO("Estimated rot: [%f\t %f\t %f\t %f]", estimated_rotation.w(),
+           estimated_rotation.x(), estimated_rotation.y(),
+           estimated_rotation.z());
   pcl::io::savePCDFile("icp_aligned_sparse_cloud.pcd", Final, true);
 
   return (0);

@@ -23,9 +23,9 @@ class WeightUpdater : public ceres::IterationCallback {
   std::vector<Eigen::Affine3d> transformation_history() {
     return transformation_history_;
   }
+  std::vector<WeightedErrorTermGroup> weighted_error_terms_;
 
  private:
-  std::vector<WeightedErrorTermGroup> weighted_error_terms_;
   ProbabilisticWeights weightCalculator_;
   double* rotation_;
   double* translation_;

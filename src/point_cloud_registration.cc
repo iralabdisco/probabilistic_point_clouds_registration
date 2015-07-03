@@ -1,6 +1,8 @@
 #include "point_cloud_registration/point_cloud_registration.h"
 
+#include <fstream>
 #include <memory>
+#include <string>
 #include <vector>
 
 using std::size_t;
@@ -48,8 +50,10 @@ void PointCloudRegistration::solve(ceres::Solver::Options options,
 
 Eigen::Affine3d PointCloudRegistration::transformation() {
   Eigen::Affine3d affine = Eigen::Affine3d::Identity();
-  affine.rotate(Eigen::Quaternion<double>(rotation_[0], rotation_[1],
-                                          rotation_[2], rotation_[3]));
+  Eigen::Quaternion<double> estimated_rot(rotation_[0], rotation_[1],
+                                          rotation_[2], rotation_[3]);
+  estimated_rot.normalize();
+  affine.rotate(estimated_rot);
   affine.pretranslate(Eigen::Vector3d(translation_));
   return affine;
 }
@@ -58,4 +62,21 @@ std::vector<Eigen::Affine3d> PointCloudRegistration::transformation_history() {
   return weight_updater_->transformation_history();
 }
 
+/*bool PointCloudRegistration::writeWeightsToFile(std::string filename) {
+  std::ofstream weights_file;
+  weights_file.open(filename);
+  if (!weights_file.is_open()) {
+    return false;
+  }
+  for (std::size_t i = 0; i < weight_updater_->weighted_error_terms_.size(); i++) {
+    for (std::size_t j = 0; j < weight_updater_->weighted_error_terms_.at(i).size(); j++) {
+      double weight[3];
+      (weighted_error_terms_)[i][j]->weight()->Evaluate(1, weight);
+      weights_file << weight[0] << "\t";
+    }
+    weights_file << std::endl;
+  }
+  weights_file.close();
+  return true;
+}*/
 }  // namespace point_cloud_registration
