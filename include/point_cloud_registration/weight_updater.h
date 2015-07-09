@@ -16,7 +16,7 @@ typedef std::vector<std::unique_ptr<WeightedErrorTerm>> WeightedErrorTermGroup;
 class WeightUpdater : public ceres::IterationCallback {
  public:
   explicit WeightUpdater(int num_groups, double dof,
-      double* rotation, double* translation);
+      double* rotation, double* translation, std::vector<std::vector<int>> data_association, int dense_size_);
   ceres::CallbackReturnType operator()(const ceres::IterationSummary& summary);
   void addErrorTerm(int index,
                             std::unique_ptr<WeightedErrorTerm> error_term);
@@ -30,6 +30,8 @@ class WeightUpdater : public ceres::IterationCallback {
   double* rotation_;
   double* translation_;
   std::vector<Eigen::Affine3d> transformation_history_;
+  std::vector<std::vector<int>> data_association_;
+  int dense_size_;
 };
 }  // namespace point_cloud_registration
 

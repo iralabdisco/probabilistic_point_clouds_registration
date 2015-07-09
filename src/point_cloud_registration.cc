@@ -28,7 +28,7 @@ PointCloudRegistration::PointCloudRegistration(
   /*prob_opt.local_parameterization_ownership = ceres::DO_NOT_TAKE_OWNERSHIP;*/
   problem_.reset(new ceres::Problem());
   weight_updater_.reset(
-      new WeightUpdater(data_association.size(), dof, rotation_, translation_));
+      new WeightUpdater(data_association.size(), dof, rotation_, translation_, data_association, target_cloud.size()));
   for (size_t i = 0; i < data_association.size(); i++) {
     for (size_t j = 0; j < data_association[i].size(); j++) {
       std::unique_ptr<WeightedErrorTerm> error_term(new WeightedErrorTerm(

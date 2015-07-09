@@ -215,7 +215,7 @@ int main(int argc, char** argv) {
   pcl::PointCloud<PointType>::Ptr aligned_filtered_sparse(
       new pcl::PointCloud<PointType>());
   pcl::transformPointCloud(*sparse_cloud, *aligned_sparse, estimated_transform);
-  pcl::transformPointCloud(*sparse_cloud, *aligned_filtered_sparse,
+  pcl::transformPointCloud(*filtered_sparse_cloud, *aligned_filtered_sparse,
                            estimated_transform);
   if (previous) {
     estimated_transform = estimated_transform * previous_transform;
@@ -302,6 +302,26 @@ int main(int argc, char** argv) {
     residuals_file << std::endl;
   }
   residuals_file.close();
+  std::ofstream sparse_file;
+  sparse_file.open("sparse_points.txt");
+  for (auto point : *aligned_filtered_sparse) {
+      sparse_file << point.x << ",";
+      sparse_file << point.y << ",";
+      sparse_file << point.z;
+    sparse_file << std::endl;
+  }
+  sparse_file.close();
+
+  std::ofstream dense_file;
+  dense_file.open("dense_points.txt");
+  for (auto point : *filtered_dense_cloud) {
+      dense_file << point.x << ",";
+      dense_file << point.y << ",";
+      dense_file << point.z;
+    dense_file << std::endl;
+  }
+  dense_file.close();
+
   while (!viewer.wasStopped()) {
     viewer.spinOnce(100);
     boost::this_thread::sleep(boost::posix_time::microseconds(100000));

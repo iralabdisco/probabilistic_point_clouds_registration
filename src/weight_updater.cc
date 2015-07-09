@@ -8,11 +8,13 @@
 namespace point_cloud_registration {
 
 WeightUpdater::WeightUpdater(int num_groups, double dof, double* rotation,
-                             double* translation)
+                             double* translation, std::vector<std::vector<int>> data_association, int dense_size)
     : weighted_error_terms_(num_groups),
       weightCalculator_(dof, ReprojectionError::kResiduals),
       rotation_(rotation),
-      translation_(translation) {}
+      translation_(translation),
+      data_association_(data_association),
+      dense_size_(dense_size) {}
 
 ceres::CallbackReturnType WeightUpdater::operator()(
     const ceres::IterationSummary& summary) {
@@ -39,7 +41,14 @@ ceres::CallbackReturnType WeightUpdater::operator()(
   weights_file.open(std::to_string(summary.iteration) + "_weight_history.txt");
   residuals_file.open(std::to_string(summary.iteration) +
                       "_residual_history.txt");
-  for (auto weights_group : weights) {
+  std::vector<std::vector<double>> weight_matrix (data_association_.size(), std::vector<double>(dense_size_, 0));
+  for (size_t i = 0; i < data_association_.size(); i++) {
+    for (size_t j = 0; j < data_association_[i].size(); j++) {
+      weight_matrix[i][data_association_[i][j]] = weights[i][j];
+    }
+  }
+
+  for (auto weights_group : weight_matrix) {
     for (auto weight : weights_group) {
       weights_file << weight << ",";
     }
