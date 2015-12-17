@@ -36,34 +36,12 @@ ceres::CallbackReturnType WeightUpdater::operator()(
     }
   }
 
-  std::ofstream weights_file;
-  std::ofstream residuals_file;
-  weights_file.open(std::to_string(summary.iteration) + "_weight_history.txt");
-  residuals_file.open(std::to_string(summary.iteration) +
-                      "_residual_history.txt");
-  std::vector<std::vector<double>> weight_matrix (data_association_.size(), std::vector<double>(dense_size_, 0));
+  std::vector<std::vector<double>> weight_matrix(data_association_.size(), std::vector<double>(dense_size_, 0));
   for (size_t i = 0; i < data_association_.size(); i++) {
     for (size_t j = 0; j < data_association_[i].size(); j++) {
       weight_matrix[i][data_association_[i][j]] = weights[i][j];
     }
   }
-
-  for (auto weights_group : weight_matrix) {
-    for (auto weight : weights_group) {
-      weights_file << weight << ",";
-    }
-    weights_file << std::endl;
-  }
-  weights_file.close();
-
-  for (auto residuals_group : residuals) {
-    for (auto residual : residuals_group) {
-      residuals_file << residual << ",";
-    }
-    residuals_file << std::endl;
-  }
-  residuals_file.close();
-
 
   Eigen::Quaternion<double> estimated_rot(rotation_[0], rotation_[1],
                                           rotation_[2], rotation_[3]);

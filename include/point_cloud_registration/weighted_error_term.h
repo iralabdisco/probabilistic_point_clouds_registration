@@ -11,7 +11,13 @@ namespace point_cloud_registration {
 class WeightedErrorTerm {
  public:
   WeightedErrorTerm(const pcl::PointXYZ& source_point,
-                    const pcl::PointXYZ& target_point);
+                    const pcl::PointXYZ& target_point): 
+      error_term_(new ReprojectionError(source_point, target_point)),
+      cost_function_(new ceres::AutoDiffCostFunction<
+          ReprojectionError, ReprojectionError::kResiduals, 4, 3>(error_term_)),
+      weight_(new ceres::LossFunctionWrapper(
+          new ceres::ScaledLoss(NULL, 1, ceres::TAKE_OWNERSHIP),
+          ceres::TAKE_OWNERSHIP)) {}
   inline double squaredError() { return error_term_->squaredError(); }
   inline void updateWeight(double new_weight) {
     weight_->Reset(
@@ -23,8 +29,7 @@ class WeightedErrorTerm {
 
  private:
   ReprojectionError* error_term_;
-  ceres::AutoDiffCostFunction<ReprojectionError, ReprojectionError::kResiduals,
-                              4, 3>* cost_function_;
+  ceres::AutoDiffCostFunction<ReprojectionError, ReprojectionError::kResiduals,4, 3>* cost_function_;
   ceres::LossFunctionWrapper* weight_;
 };
 }  // namespace point_cloud_registration

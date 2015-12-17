@@ -1,5 +1,5 @@
-#ifndef POINT_CLOUD_REGISTRATION_REPROJECTION_ERROR_H
-#define POINT_CLOUD_REGISTRATION_REPROJECTION_ERROR_H
+#ifndef INCLUDE_POINT_CLOUD_REGISTRATION_REPROJECTION_ERROR_H_
+#define INCLUDE_POINT_CLOUD_REGISTRATION_REPROJECTION_ERROR_H_
 
 #include <ceres/ceres.h>
 #include <ceres/rotation.h>
@@ -9,18 +9,17 @@
 namespace point_cloud_registration {
 struct ReprojectionError {
   ReprojectionError(const pcl::PointXYZ& source_point,
-                    const pcl::PointXYZ& target_point);
+                    const pcl::PointXYZ& target_point):
+      source_point_(source_point.x, source_point.y, source_point.z),
+      target_point_(target_point.x, target_point.y, target_point.z) {}
 
   template <typename T>
   bool operator()(const T* const rotation, const T* const translation,
                   T* residuals) const;
 
-  inline double squaredError() { return squared_error_; }
-
   static const int kResiduals = 3;
   Eigen::Vector3d source_point_;
   Eigen::Vector3d target_point_;
-  mutable double squared_error_;
 };
 
 template <typename T>
@@ -43,4 +42,4 @@ bool ReprojectionError::operator()(const T* const rotation,
 }
 
 }  // namespace point_cloud_registration
-#endif
+#endif  // INCLUDE_POINT_CLOUD_REGISTRATION_REPROJECTION_ERROR_H_

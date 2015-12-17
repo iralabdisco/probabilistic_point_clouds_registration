@@ -22,10 +22,6 @@ PointCloudRegistration::PointCloudRegistration(
                 rotation_initial_guess[2], rotation_initial_guess[3]},
       translation_{translation_initial_guess[0], translation_initial_guess[1],
                    translation_initial_guess[2]} {
-  // ceres::Problem::Options prob_opt;
-  // prob_opt.cost_function_ownership = ceres::DO_NOT_TAKE_OWNERSHIP;
-  // prob_opt.loss_function_ownership = ceres::DO_NOT_TAKE_OWNERSHIP;
-  /*prob_opt.local_parameterization_ownership = ceres::DO_NOT_TAKE_OWNERSHIP;*/
   problem_.reset(new ceres::Problem());
   weight_updater_.reset(
       new WeightUpdater(data_association.size(), dof, rotation_, translation_, data_association, target_cloud.size()));

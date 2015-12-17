@@ -1,5 +1,3 @@
-#include <sm/assert_macros.hpp>
-
 #include <cmath>
 #include <limits>
 
@@ -7,21 +5,21 @@
 
 namespace point_cloud_registration {
 
-SM_DEFINE_EXCEPTION(Exception, std::runtime_error);
+// SM_DEFINE_EXCEPTION(Exception, std::runtime_error);
 
 constexpr double pi() { return std::atan(1) * 4; }
 
 void ProbabilisticWeights::updateWeights(
     const std::vector<std::vector<double>>& residuals,
     std::vector<std::vector<double>>* weights) {
-  SM_ASSERT_TRUE(
+  /*SM_ASSERT_TRUE(
       Exception, weights->size() == residuals.size(),
-      "The dimensions of the weights and residuals vectors must be the same");
-  for (std::size_t i = 0; i < residuals.size(); i++) {
+      "The dimensions of the weights and residuals vectors must be the same");*/
+/*  for (std::size_t i = 0; i < residuals.size(); i++) {
     SM_ASSERT_TRUE(
         Exception, residuals[i].size() == weights->at(i).size(),
         "The dimensions of the weights and residuals vectors must be the same");
-  }
+  }*/
   for (std::size_t j = 0; j < residuals.size(); j++) {
     const std::vector<double>* residuals_group = &(residuals[j]);
     double max_log_prob = -std::numeric_limits<double>::infinity();
@@ -64,11 +62,11 @@ void ProbabilisticWeights::updateWeights(
 
   ProbabilisticWeights::ProbabilisticWeights(double v, int dimension)
       : dimension_(dimension) {
-    SM_ASSERT_TRUE(
+    /*SM_ASSERT_TRUE(
         Exception, dimension > 0,
         "The dimension of the error terms must be greater than zero");
     SM_ASSERT_TRUE(Exception, v > 0.0,
-                   "The dof of the t-distribution must be greater than zero");
+                   "The dof of the t-distribution must be greater than zero");*/
     if (v < std::numeric_limits<double>::infinity()) {
       v_ = v;
       t_exponent_ = -(v + dimension_) / 2.0;

@@ -29,7 +29,6 @@ class PointCloudRegistration {
   void solve(ceres::Solver::Options options, ceres::Solver::Summary* Summary);
   Eigen::Affine3d transformation();
   std::vector<Eigen::Affine3d> transformation_history();
-  // bool writeWeightsToFile(std::string filename);
 
  private:
   std::vector<WeightedErrorTermGroup> weighted_error_terms_;
