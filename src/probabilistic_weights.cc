@@ -1,5 +1,6 @@
 #include <cmath>
 #include <limits>
+#include <Eigen/Sparse>
 
 #include "point_cloud_registration/probabilistic_weights.h"
 
@@ -9,40 +10,30 @@ namespace point_cloud_registration {
 
 constexpr double pi() { return std::atan(1) * 4; }
 
-void ProbabilisticWeights::updateWeights(
-    const std::vector<std::vector<double>>& residuals,
-    std::vector<std::vector<double>>* weights) {
-  /*SM_ASSERT_TRUE(
-      Exception, weights->size() == residuals.size(),
-      "The dimensions of the weights and residuals vectors must be the same");*/
-/*  for (std::size_t i = 0; i < residuals.size(); i++) {
-    SM_ASSERT_TRUE(
-        Exception, residuals[i].size() == weights->at(i).size(),
-        "The dimensions of the weights and residuals vectors must be the same");
-  }*/
-  for (std::size_t j = 0; j < residuals.size(); j++) {
-    const std::vector<double>* residuals_group = &(residuals[j]);
-    double max_log_prob = -std::numeric_limits<double>::infinity();
-    std::vector<double> log_probs;
-    std::vector<double> expected_weights;
-    log_probs.reserve(residuals_group->size());
-    expected_weights.reserve(residuals_group->size());
-    double marginal_log_likelihood = 0;
-    for (double squared_error : *residuals_group) {
-      // Update log_probs
-      double log_prob;
-      if (is_normal_) {
-        log_prob = -squared_error / 2 + log_norm_constant_;
-      } else {
-        log_prob =
-            (t_exponent_) * std::log1p(squared_error / v_) - log_norm_constant_;
-        const double expected_weight = (v_ + dimension_) / (v_ + squared_error);
-        expected_weights.push_back(expected_weight);
-      }
+Eigen::SparseMatrix<double>  ProbabilisticWeights::updateWeights(const Eigen::SparseMatrix<double> residuals) {
+    Eigen::SparseMatrix<double> weights(residuals.rows(), residuals.cols());
+    for (std::size_t j = 0; j < residuals.size(); j++) {
+        double max_log_prob = -std::numeric_limits<double>::infinity();
+        std::vector<double> log_probs;
+        std::vector<double> expected_weights;
+        log_probs.reserve(residuals_group->size());
+        expected_weights.reserve(residuals_group->size());
+        double marginal_log_likelihood = 0;
+        for (double squared_error : *residuals_group) {
+            // Update log_probs
+            double log_prob;
+            if (is_normal_) {
+                log_prob = -squared_error / 2 + log_norm_constant_;
+            } else {
+                log_prob =
+                    (t_exponent_) * std::log1p(squared_error / v_) - log_norm_constant_;
+                const double expected_weight = (v_ + dimension_) / (v_ + squared_error);
+                expected_weights.push_back(expected_weight);
+            }
 
-      if (log_prob > max_log_prob) {
-        max_log_prob = log_prob;
-      }
+            if (log_prob > max_log_prob) {
+                max_log_prob = log_prob;
+            }
       log_probs.push_back(log_prob);
     }
     for (double log_p : log_probs) {

@@ -4,6 +4,7 @@
 #include <ceres/ceres.h>
 #include <ceres/loss_function.h>
 #include <Eigen/Core>
+#include <Eigen/Sparse>
 
 #include <vector>
 
@@ -20,18 +21,14 @@ class WeightUpdater : public ceres::IterationCallback {
   ceres::CallbackReturnType operator()(const ceres::IterationSummary& summary);
   void addErrorTerm(int index,
                             std::unique_ptr<WeightedErrorTerm> error_term);
-  std::vector<Eigen::Affine3d> transformation_history() {
-    return transformation_history_;
-  }
   std::vector<WeightedErrorTermGroup> weighted_error_terms_;
 
  private:
   ProbabilisticWeights weightCalculator_;
   double* rotation_;
   double* translation_;
-  std::vector<Eigen::Affine3d> transformation_history_;
-  std::vector<std::vector<int>> data_association_;
-  int dense_size_;
+  int max_neighbours_;
+  Eigen::SparseMatrix<int> data_association_;
 };
 }  // namespace point_cloud_registration
 

@@ -105,24 +105,24 @@ int main(int argc, char** argv) {
       new pcl::PointCloud<PointType>());
   pcl::VoxelGrid<PointType> filter;
 
-  pcl::ModelCoefficients::Ptr coefficients(new pcl::ModelCoefficients);
-  pcl::PointIndices::Ptr inliers(new pcl::PointIndices);
+  // pcl::ModelCoefficients::Ptr coefficients(new pcl::ModelCoefficients);
+  // pcl::PointIndices::Ptr inliers(new pcl::PointIndices);
   // Create the segmentation object
-  pcl::SACSegmentation<pcl::PointXYZ> plane_segmentation;
-  // Optional
-  plane_segmentation.setOptimizeCoefficients(true);
-  // Mandatory
-  plane_segmentation.setModelType(pcl::SACMODEL_PLANE);
-  plane_segmentation.setMethodType(pcl::SAC_RANSAC);
-  plane_segmentation.setDistanceThreshold(1);
-
-  plane_segmentation.setInputCloud(dense_cloud);
-  plane_segmentation.segment(*inliers, *coefficients);
-  pcl::ExtractIndices<pcl::PointXYZ> extract;
-  extract.setInputCloud(dense_cloud);
-  extract.setIndices(inliers);
-  extract.setNegative(true);
-  // extract.filter (*dense_cloud);
+//   pcl::SACSegmentation<pcl::PointXYZ> plane_segmentation;
+//   // Optional
+//   plane_segmentation.setOptimizeCoefficients(true);
+//   // Mandatory
+//   plane_segmentation.setModelType(pcl::SACMODEL_PLANE);
+//   plane_segmentation.setMethodType(pcl::SAC_RANSAC);
+//   plane_segmentation.setDistanceThreshold(1);
+// 
+//   plane_segmentation.setInputCloud(dense_cloud);
+//   plane_segmentation.segment(*inliers, *coefficients);
+  // pcl::ExtractIndices<pcl::PointXYZ> extract;
+  // extract.setInputCloud(dense_cloud);
+  // extract.setIndices(inliers);
+  // extract.setNegative(true);
+  // // extract.filter (*dense_cloud);
 
   if (sparse_filter_size > 0) {
     filter.setInputCloud(sparse_cloud);

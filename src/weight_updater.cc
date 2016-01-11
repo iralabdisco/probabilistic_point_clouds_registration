@@ -29,7 +29,7 @@ ceres::CallbackReturnType WeightUpdater::operator()(
   for (std::size_t i = 0; i < residuals.size(); i++) {
     weights[i] = std::vector<double>(residuals[i].size());
   }
-  weightCalculator_.updateWeights(residuals, &weights);
+  weightCalculator_.updateWeights(residuals);
   for (std::size_t i = 0; i < weighted_error_terms_.size(); i++) {
     for (std::size_t j = 0; j < weighted_error_terms_.at(i).size(); j++) {
       (weighted_error_terms_)[i][j]->updateWeight(weights[i][j]);
