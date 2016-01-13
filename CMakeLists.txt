@@ -17,13 +17,14 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 #add_definitions(${PCL_DEFINITIONS})
 
 #cs_add_library(dense_sparse_simulator src/dense_sparse_simulator.cc)
-cs_add_library(${PROJECT_NAME} 
-  src/reprojection_error.cc
+cs_add_library(${PROJECT_NAME}
   src/point_cloud_registration.cc
-  src/weighted_error_term.cc
-  src/weight_updater.cc
-  src/probabilistic_weights.cc)
+  include/point_cloud_registration/probabilistic_weights.hpp
+  include/point_cloud_registration/error_term.hpp)
 
+catkin_add_gtest(${PROJECT_NAME}_test
+	test/test_main.cc
+	test/ProbabilisticWeightsTest.cc)
 #cs_add_executable(point_cloud_registration_simulator src/point_cloud_registration_simulator.cc)
 #cs_add_executable(point_cloud_registration_ros src/point_cloud_registration_ros.cc)
 #cs_add_executable(registration_visualizer src/registration_visualizer.cc)

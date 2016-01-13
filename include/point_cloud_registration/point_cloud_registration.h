@@ -9,25 +9,30 @@
 
 #include <vector>
 
-#include "point_cloud_registration/weight_updater.h"
-#include "point_cloud_registration/weighted_error_term.h"
+#include "point_cloud_registration/error_term.hpp"
+#include "point_cloud_registration/probabilistic_weights.hpp"
 
 namespace point_cloud_registration {
 
-typedef std::vector<std::unique_ptr<WeightedErrorTerm>> WeightedErrorTermGroup;
+struct PointCloudRegistrationParams {
+  int max_neighbours;
+  double dof;
+  int dimension = 3;
+  double initial_rotation[4] = {1, 0, 0, 0};
+  double initial_translation[3] = {0, 0, 0};
+};
 
-class PointCloudRegistration: public ceres::IterationCallback {
+class PointCloudRegistration : public ceres::IterationCallback {
  public:
-  PointCloudRegistration(const pcl::PointCloud<pcl::PointXYZ>& source_cloud,
-                         const pcl::PointCloud<pcl::PointXYZ>& target_cloud,
-                         Eigen::Sparse<int>& data_association,
-                         double dof,
-                         const double rotation_initial_guess[4] =
-                             PointCloudRegistration::default_rotation,
-                         const double translation_initial_guess[3] =
-                             PointCloudRegistration::default_translation);
+  PointCloudRegistration(
+      const pcl::PointCloud<pcl::PointXYZ> &source_cloud,
+      const pcl::PointCloud<pcl::PointXYZ> &target_cloud,
+      const Eigen::SparseMatrix<int, Eigen::RowMajor> &data_association,
+      PointCloudRegistrationParams parameters);
 
-  void solve(ceres::Solver::Options options, ceres::Solver::Summary* Summary);
+  void solve(ceres::Solver::Options options, ceres::Solver::Summary *Summary);
+  ceres::CallbackReturnType operator()(const ceres::IterationSummary &summary);
+  ceres::CallbackReturnType callback(const ceres::IterationSummary &summary);
   Eigen::Affine3d transformation();
 
  private:
@@ -35,10 +40,9 @@ class PointCloudRegistration: public ceres::IterationCallback {
   std::unique_ptr<ceres::Problem> problem_;
   double rotation_[4];
   double translation_[3];
-  static const double default_rotation[4];
-  static const double default_translation[3];
-  int max_neighbours_;
-  Eigen::Sparse<int> data_association_;
+  Eigen::SparseMatrix<int, Eigen::RowMajor> data_association_;
+  ProbabilisticWeights weight_updater_;
+  PointCloudRegistrationParams parameters_;
 };
 
 }  // namespace point_cloud_registration
