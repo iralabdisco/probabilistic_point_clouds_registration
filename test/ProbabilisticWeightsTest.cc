@@ -22,6 +22,7 @@ Eigen::SparseMatrix<double, Eigen::RowMajor> squaredErrors() {
   tripletList.push_back(Eigen::Triplet<double>(1, 3, 16));
   Eigen::SparseMatrix<double, Eigen::RowMajor> squared_errors(2, 4);
   squared_errors.setFromTriplets(tripletList.begin(), tripletList.end());
+  squared_errors.makeCompressed();
   return squared_errors;
 }
 

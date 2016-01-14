@@ -76,19 +76,22 @@ class ProbabilisticWeights {
       }
       marginal_log_likelihood =
           std::log(marginal_log_likelihood) + max_log_prob;
+      int k = 0;
       for (Eigen::SparseMatrix<double, Eigen::RowMajor>::InnerIterator it(
                squared_errors, i);
            it; ++it) {
         if (is_normal_) {
-          weights.insert(i, it.index()) =
-              std::exp(log_probs[i] - marginal_log_likelihood);
+          weights.insert(it.row(), it.col()) =
+              std::exp(log_probs[k] - marginal_log_likelihood);
         } else {
-          weights.insert(i, it.index()) =
-              std::exp(log_probs[i] - marginal_log_likelihood) *
-              expected_weights[i];
+          weights.insert(it.row(), it.col()) =
+              std::exp(log_probs[k] - marginal_log_likelihood) *
+              expected_weights[k];
         }
+        ++k;
       }
     }
+    weights.makeCompressed();
     return weights;
   }
 };
