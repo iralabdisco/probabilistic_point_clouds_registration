@@ -38,8 +38,8 @@ class ErrorTerm {
 
   void updateWeight(double new_weight) {
     weight_->Reset(
-        new ceres::ScaledLoss(NULL, new_weight, ceres::TAKE_OWNERSHIP),
-        ceres::TAKE_OWNERSHIP);
+        new ceres::ScaledLoss(NULL, new_weight, ceres::DO_NOT_TAKE_OWNERSHIP),
+        ceres::DO_NOT_TAKE_OWNERSHIP);
   }
 
   ceres::LossFunctionWrapper* weight() { return weight_; }
