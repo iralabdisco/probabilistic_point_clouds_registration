@@ -29,7 +29,7 @@ catkin_add_gtest(${PROJECT_NAME}_test
         test/ProbabilisticWeightsTest.cc
         test/PointCloudRegistrationTest.cc)
 
-target_link_libraries(${PROJECT_NAME}_test ${PROJECT_NAME})
+target_link_libraries(${PROJECT_NAME}_test ${PROJECT_NAME} libvtkCommon.so libvtkFiltering.so)
 #cs_add_executable(point_cloud_registration_simulator src/point_cloud_registration_simulator.cc)
 #cs_add_executable(point_cloud_registration_ros src/point_cloud_registration_ros.cc)
 #cs_add_executable(registration_visualizer src/registration_visualizer.cc)

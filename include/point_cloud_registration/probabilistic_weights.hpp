@@ -2,6 +2,7 @@
 #define POINT_CLOUD_REGISTRATION_PROBABILISTIC_WEIGHTS_H
 
 #include <Eigen/Sparse>
+
 #include <assert.h>
 #include <cmath>
 #include <limits>

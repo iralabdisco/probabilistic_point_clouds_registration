@@ -1,11 +1,5 @@
 #include "point_cloud_registration/point_cloud_registration.h"
 
-#include <memory>
-#include <string>
-#include <vector>
-
-using std::size_t;
-
 namespace point_cloud_registration
 {
 
@@ -26,20 +20,19 @@ PointCloudRegistration::PointCloudRegistration(
               std::end(parameters_.initial_translation),
               std::begin(translation_));
     error_terms_.reserve(source_cloud.size());
-    problem_ = new ceres::Problem();
+    problem_.reset(new ceres::Problem());
     for (size_t i = 0; i < data_association.outerSize(); i++)
     {
         for (Eigen::SparseMatrix<int, Eigen::RowMajor>::InnerIterator it(
                     data_association, i);
                 it; ++it)
         {
-            ErrorTerm error_term(source_cloud[i], target_cloud[it.index()]);
+            ErrorTerm* error_term = new ErrorTerm(source_cloud[it.row()], target_cloud[it.col()]);
             error_terms_.push_back(error_term);
-            ErrorTerm *error_term_ptr = &(error_terms_.back());
             problem_->AddResidualBlock(
                 new ceres::AutoDiffCostFunction < ErrorTerm, ErrorTerm::kResiduals, 4,
-                3 > (error_term_ptr),
-                error_term_ptr->weight(), rotation_, translation_);
+                3 > (error_term),
+                error_term->weight(), rotation_, translation_);
         }
     }
     weight_updater_callback_.reset(new WeightUpdaterCallback(&data_association_, &parameters_, &error_terms_, &weight_updater_, rotation_, translation_));
@@ -51,7 +44,7 @@ void PointCloudRegistration::solve(ceres::Solver::Options options,
 {
     options.callbacks.push_back(weight_updater_callback_.get());
     options.update_state_every_iteration = true;
-    ceres::Solve(options, problem_, summary);
+    ceres::Solve(options, problem_.get(), summary);
 }
 
 Eigen::Affine3d PointCloudRegistration::transformation()

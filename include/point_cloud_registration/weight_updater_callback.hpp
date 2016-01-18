@@ -10,7 +10,6 @@
 #include "point_cloud_registration/error_term.hpp"
 #include "point_cloud_registration/point_cloud_registration_params.hpp"
 
-
 namespace point_cloud_registration
 {
 
@@ -20,7 +19,7 @@ class WeightUpdaterCallback : public ceres::IterationCallback
 private:
     Eigen::SparseMatrix<int, Eigen::RowMajor> *data_association_;
     PointCloudRegistrationParams* params_;
-    std::vector<ErrorTerm>* error_terms_;
+    std::vector<ErrorTerm*>* error_terms_;
     ProbabilisticWeights* weight_updater_;
     double* rotation_;
     double* translation_;
@@ -28,7 +27,7 @@ private:
 public:
     WeightUpdaterCallback(Eigen::SparseMatrix<int, Eigen::RowMajor> *data_association,
                           PointCloudRegistrationParams* params,
-                          std::vector<ErrorTerm>* error_terms, ProbabilisticWeights* weight_updater, double rotation[4], double translation[3]):
+                          std::vector<ErrorTerm*>* error_terms, ProbabilisticWeights* weight_updater, double rotation[4], double translation[3]):
         data_association_(data_association), params_(params), error_terms_(error_terms), weight_updater_(weight_updater), rotation_(rotation),
         translation_(translation) {}
 
@@ -44,7 +43,7 @@ public:
         {
 
             double residual[3];
-            (error_terms_->at(i))(rotation_, translation_, residual);
+            (*(error_terms_->at(i)))(rotation_, translation_, residual);
             double squared_error = residual[0] * residual[0] +
                                    residual[1] * residual[1] +
                                    residual[2] * residual[2];
@@ -59,7 +58,7 @@ public:
                         weights_, i);
                     it; ++it)
             {
-                error_terms_->at(k).updateWeight(it.value());
+                error_terms_->at(k)->updateWeight(it.value());
                 k++;
             }
         }

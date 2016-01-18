@@ -14,7 +14,6 @@
 #include "point_cloud_registration/weight_updater_callback.hpp"
 #include "point_cloud_registration/point_cloud_registration_params.hpp"
 
-
 namespace point_cloud_registration
 {
 
@@ -26,13 +25,12 @@ public:
         const pcl::PointCloud<pcl::PointXYZ> &target_cloud,
         const Eigen::SparseMatrix<int, Eigen::RowMajor> &data_association,
         PointCloudRegistrationParams parameters);
-
     void solve(ceres::Solver::Options options, ceres::Solver::Summary *Summary);
     Eigen::Affine3d transformation();
 
 private:
-    std::vector<ErrorTerm> error_terms_;
-    ceres::Problem* problem_;
+    std::vector<ErrorTerm*> error_terms_;
+    std::unique_ptr<ceres::Problem> problem_;
     double rotation_[4];
     double translation_[3];
     Eigen::SparseMatrix<int, Eigen::RowMajor> data_association_;

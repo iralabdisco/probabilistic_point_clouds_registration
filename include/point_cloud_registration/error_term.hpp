@@ -1,5 +1,5 @@
-#ifndef INCLUDE_POINT_CLOUD_REGISTRATION_REPROJECTION_ERROR_H_
-#define INCLUDE_POINT_CLOUD_REGISTRATION_REPROJECTION_ERROR_H_
+#ifndef INCLUDE_POINT_CLOUD_REGISTRATION_REPROJECTION_ERROR_H
+#define INCLUDE_POINT_CLOUD_REGISTRATION_REPROJECTION_ERROR_H
 
 #include <ceres/ceres.h>
 #include <ceres/rotation.h>
@@ -10,8 +10,8 @@ namespace point_cloud_registration {
 class ErrorTerm {
  public:
   static const int kResiduals = 3;
-  ErrorTerm(const pcl::PointXYZ& source_point,
-            const pcl::PointXYZ& target_point)
+  ErrorTerm(const pcl::PointXYZ source_point,
+            const pcl::PointXYZ target_point)
       : source_point_(source_point.x, source_point.y, source_point.z),
         target_point_(target_point.x, target_point.y, target_point.z),
         weight_(new ceres::LossFunctionWrapper(
@@ -38,8 +38,8 @@ class ErrorTerm {
 
   void updateWeight(double new_weight) {
     weight_->Reset(
-        new ceres::ScaledLoss(NULL, new_weight, ceres::DO_NOT_TAKE_OWNERSHIP),
-        ceres::DO_NOT_TAKE_OWNERSHIP);
+        new ceres::ScaledLoss(NULL, new_weight, ceres::TAKE_OWNERSHIP),
+        ceres::TAKE_OWNERSHIP);
   }
 
   ceres::LossFunctionWrapper* weight() { return weight_; }

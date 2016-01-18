@@ -3,7 +3,6 @@
 
 namespace point_cloud_registration
 {
-
 struct PointCloudRegistrationParams
 {
     int max_neighbours;
