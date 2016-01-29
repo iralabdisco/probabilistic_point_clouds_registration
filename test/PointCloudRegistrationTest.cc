@@ -9,21 +9,6 @@
 
 using point_cloud_registration::PointCloudRegistration;
 using point_cloud_registration::PointCloudRegistrationParams;
-pcl::PointCloud<pcl::PointXYZ> randomCloud()
-{
-    pcl::PointCloud<pcl::PointXYZ> cloud;
-    cloud.width    = 20;
-    cloud.height   = 1;
-    cloud.is_dense = false;
-    cloud.points.resize (cloud.width * cloud.height);
-    for (size_t i = 0; i < cloud.points.size (); ++i)
-    {
-        cloud.points[i].x = 1024 * rand () / (RAND_MAX + 1.0f);
-        cloud.points[i].y = 1024 * rand () / (RAND_MAX + 1.0f);
-        cloud.points[i].z = 1024 * rand () / (RAND_MAX + 1.0f);
-    }
-    return cloud;
-}
 
 pcl::PointCloud<pcl::PointXYZ> generateCloud()
 {
@@ -47,7 +32,7 @@ pcl::PointCloud<pcl::PointXYZ> generateCloud()
 
 TEST(PointCloudRegistrationTestSuite, exactDataAssociationGaussianTest)
 {
-    auto source_cloud = randomCloud();
+    auto source_cloud = generateCloud();
     pcl::PointCloud<pcl::PointXYZ> target_cloud;
     Eigen::Affine3d transform = Eigen::Affine3d::Identity();
     transform.translation() << 2.5, 0.0, 0.0;
@@ -93,7 +78,7 @@ TEST(PointCloudRegistrationTestSuite, exactDataAssociationGaussianTest)
 
 TEST(PointCloudRegistrationTestSuite, exactDataAssociationTDistributionTest)
 {
-    auto source_cloud = randomCloud();
+    auto source_cloud = generateCloud();
     pcl::PointCloud<pcl::PointXYZ> target_cloud;
     Eigen::Affine3d transform = Eigen::Affine3d::Identity();
     transform.translation() << 2.5, 0.0, 0.0;
