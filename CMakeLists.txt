@@ -24,13 +24,15 @@ cs_add_library(${PROJECT_NAME}
   include/point_cloud_registration/probabilistic_weights.hpp
   include/point_cloud_registration/error_term.hpp)
 
+cs_add_executable(point_cloud_registration_ros src/point_cloud_registration_ros.cc)
+
 catkin_add_gtest(${PROJECT_NAME}_test
 	test/test_main.cc
         test/ProbabilisticWeightsTest.cc
         test/PointCloudRegistrationTest.cc)
 
-target_link_libraries(${PROJECT_NAME}_test ${PROJECT_NAME} libvtkCommon.so libvtkFiltering.so)
-#cs_add_executable(point_cloud_registration_simulator src/point_cloud_registration_simulator.cc)
+target_link_libraries(${PROJECT_NAME}_test ${PROJECT_NAME})
+target_link_libraries(point_cloud_registration_ros ${PROJECT_NAME})
 #cs_add_executable(point_cloud_registration_ros src/point_cloud_registration_ros.cc)
 #cs_add_executable(registration_visualizer src/registration_visualizer.cc)
 #cs_add_executable(icp_registration src/icp_registration.cc)
