@@ -67,7 +67,7 @@ int main(int argc, char** argv)
     {
         ROS_INFO("Using file %s as sparse point cloud", source_file_name.c_str());
     }
-    source_cloud->header.frame_id="map";
+    source_cloud->header.frame_id = "map";
     source_pub.publish(source_cloud);
 
     ROS_INFO("Loading target point cloud");
@@ -84,7 +84,7 @@ int main(int argc, char** argv)
     {
         ROS_INFO("Using file %s as target point cloud", target_file_name.c_str());
     }
-    target_cloud->header.frame_id="map";
+    target_cloud->header.frame_id = "map";
     target_pub.publish(target_cloud);
 
 
@@ -103,28 +103,34 @@ int main(int argc, char** argv)
         ROS_INFO("Using file %s as ground truth point cloud", ground_truth_file.c_str());
         ground_truth = true;
     }
-    source_ground_truth->header.frame_id="map";
+    source_ground_truth->header.frame_id = "map";
     ground_truth_pub.publish(source_ground_truth);
 
 
     double source_filter_size, target_filter_size;
     ros::param::param<double>("~source_filter_size", source_filter_size, 0);
-    ROS_INFO("The leaf size of the voxel filter of the source cloud is: %f",source_filter_size);
+    ROS_INFO("The leaf size of the voxel filter of the source cloud is: %f", source_filter_size);
     ros::param::param<double>("~target_filter_size", target_filter_size, 0);
     ROS_INFO("The leaf size of the voxel filter of the dense cloud : %f", target_filter_size);
     pcl::VoxelGrid<PointType> filter;
     pcl::PointCloud<PointType>::Ptr filtered_source_cloud =
         boost::make_shared<pcl::PointCloud<PointType>>();
-    if (source_filter_size > 0) {
+    if (source_filter_size > 0)
+    {
         filter.setInputCloud(source_cloud);
         filter.setLeafSize(source_filter_size, source_filter_size, source_filter_size);
         filter.filter(*filtered_source_cloud);
-      }
-      if (target_filter_size > 0) {
+    }
+    else
+    {
+        *filtered_source_cloud = *source_cloud;
+    }
+    if (target_filter_size > 0)
+    {
         filter.setInputCloud(target_cloud);
         filter.setLeafSize(target_filter_size, target_filter_size, target_filter_size);
         filter.filter(*target_cloud);
-      }
+    }
     pcl::KdTreeFLANN<PointType> kdtree;
     kdtree.setInputCloud(target_cloud);
     std::vector<float> distances;
@@ -161,28 +167,38 @@ int main(int argc, char** argv)
     auto estimated_transform = registration.transformation();
     pcl::PointCloud<PointType>::Ptr aligned_source = boost::make_shared<pcl::PointCloud<PointType>>();
     pcl::transformPointCloud (*source_cloud, *aligned_source, estimated_transform);
-    source_cloud->header.frame_id="map";
-    target_cloud->header.frame_id="map";
-    aligned_source->header.frame_id="map";
+    source_cloud->header.frame_id = "map";
+    target_cloud->header.frame_id = "map";
+    aligned_source->header.frame_id = "map";
 
-    if(ground_truth){
-        double mean_error = 0;
+    if (ground_truth)
+    {
+        double mean_error_after = 0;
+        double mean_error_before = 0;
         for (std::size_t i = 0; i < source_ground_truth->size(); ++i)
         {
-            double error = std::sqrt(std::pow(source_ground_truth->at(i).x - aligned_source->at(i).x, 2) +
-                                     std::pow(source_ground_truth->at(i).y - aligned_source->at(i).y, 2) +
-                                     std::pow(source_ground_truth->at(i).z - aligned_source->at(i).z, 2));
-            mean_error += error;
+            double error_after = std::sqrt(std::pow(source_ground_truth->at(i).x - aligned_source->at(i).x, 2) +
+                                           std::pow(source_ground_truth->at(i).y - aligned_source->at(i).y, 2) +
+                                           std::pow(source_ground_truth->at(i).z - aligned_source->at(i).z, 2));
+            double error_before = std::sqrt(std::pow(source_ground_truth->at(i).x - source_cloud->at(i).x, 2) +
+                                            std::pow(source_ground_truth->at(i).y - source_cloud->at(i).y, 2) +
+                                            std::pow(source_ground_truth->at(i).z - source_cloud->at(i).z, 2));
+            mean_error_after += error_after;
+            mean_error_before += error_before;
         }
-        mean_error /= target_cloud->size();
-        ROS_INFO("Mean error: %f", mean_error);
+        mean_error_after /= source_ground_truth->size();
+        mean_error_before /= source_ground_truth->size();
+        ROS_INFO("Mean error before alignment: %f", mean_error_before);
+        ROS_INFO("Mean error after alignment: %f,", mean_error_after);
     }
     ros::Rate rate(1);
-    while(ros::ok()){
+    while (ros::ok())
+    {
         source_pub.publish(source_cloud);
         target_pub.publish(target_cloud);
         aligned_source_pub.publish(aligned_source);
-        if(ground_truth){
+        if (ground_truth)
+        {
             ground_truth_pub.publish(source_ground_truth);
         }
         rate.sleep();
