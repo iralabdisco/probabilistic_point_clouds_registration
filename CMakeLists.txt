@@ -26,6 +26,8 @@ cs_add_library(${PROJECT_NAME}
   include/point_cloud_registration/error_term.hpp)
 
 cs_add_executable(point_cloud_registration_ros src/point_cloud_registration_ros.cc)
+cs_add_executable(icp_registration src/icp_registration.cc)
+cs_add_executable(ndt_registration src/ndt_registration.cc)
 
 catkin_add_gtest(${PROJECT_NAME}_test
 	test/test_main.cc
