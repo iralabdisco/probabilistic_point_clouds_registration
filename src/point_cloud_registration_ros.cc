@@ -60,12 +60,12 @@ int main(int argc, char** argv)
     if (ros::param::get("~source_cloud", source_file_name) == false ||
             pcl::io::loadPCDFile<PointType>(source_file_name, *source_cloud) == -1)
     {
-        ROS_INFO("Could not load sparse cloud, closing...");
+        ROS_INFO("Could not load source cloud, closing...");
         exit(1);
     }
     else
     {
-        ROS_INFO("Using file %s as sparse point cloud", source_file_name.c_str());
+        ROS_INFO("Using file %s as source point cloud", source_file_name.c_str());
     }
     source_cloud->header.frame_id = "map";
     source_pub.publish(source_cloud);
@@ -191,6 +191,11 @@ int main(int argc, char** argv)
         ROS_INFO("Mean error before alignment: %f", mean_error_before);
         ROS_INFO("Mean error after alignment: %f,", mean_error_after);
     }
+
+    std::string aligned_source_name = "aligned_" + source_file_name;
+    ROS_INFO("Saving aligned source cloud to: %s", aligned_source_name.c_str());
+    pcl::io::savePCDFile(aligned_source_name, *aligned_source);
+
     ros::Rate rate(1);
     while (ros::ok())
     {
