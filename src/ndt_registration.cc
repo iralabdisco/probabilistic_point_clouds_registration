@@ -108,7 +108,7 @@ int main(int argc, char** argv)
      pcl::NormalDistributionsTransform<pcl::PointXYZ, pcl::PointXYZ> ndt;
      ndt.setTransformationEpsilon (0.01);
      ndt.setStepSize (0.1);
-     ndt.setResolution (0.1);
+     ndt.setResolution (1);
      ndt.setMaximumIterations (35);
 
      // Setting point cloud to be aligned.

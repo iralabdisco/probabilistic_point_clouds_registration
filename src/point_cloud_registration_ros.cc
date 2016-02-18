@@ -154,11 +154,11 @@ int main(int argc, char** argv)
     params.dimension = 3;
     PointCloudRegistration registration(*filtered_source_cloud, *target_cloud, data_association, params);
     ceres::Solver::Options options;
-    options.linear_solver_type = ceres::SPARSE_NORMAL_CHOLESKY;
+    options.linear_solver_type = ceres::DENSE_QR;
     options.use_nonmonotonic_steps = true;
     options.minimizer_progress_to_stdout = true;
     options.max_num_iterations = std::numeric_limits<int>::max();
-    options.function_tolerance = 10e-10;
+    options.function_tolerance = 10e-16;
     options.num_threads = 8;
     ceres::Solver::Summary summary;
     registration.solve(options, &summary);
