@@ -108,7 +108,7 @@ int main(int argc, char** argv)
      pcl::NormalDistributionsTransform<pcl::PointXYZ, pcl::PointXYZ> ndt;
      ndt.setTransformationEpsilon (0.01);
      ndt.setStepSize (0.1);
-     ndt.setResolution (1);
+     ndt.setResolution (radius);
      ndt.setMaximumIterations (35);
 
      // Setting point cloud to be aligned.
@@ -121,6 +121,13 @@ int main(int argc, char** argv)
     target_cloud->header.frame_id = "map";
     aligned_source->header.frame_id = "map";
 
+
+    std::string aligned_source_name = "aligned_" + source_file_name;
+    ROS_INFO("Saving aligned source cloud to: %s", aligned_source_name.c_str());
+    pcl::io::savePCDFile(aligned_source_name, *aligned_source);
+
+    aligned_source->clear();
+    pcl::transformPointCloud (*source_cloud, *aligned_source, ndt.getFinalTransformation());
     if (ground_truth)
     {
         double mean_error_after = 0;
@@ -141,10 +148,6 @@ int main(int argc, char** argv)
         ROS_INFO("Mean error before alignment: %f", mean_error_before);
         ROS_INFO("Mean error after alignment: %f,", mean_error_after);
     }
-
-    std::string aligned_source_name = "aligned_" + source_file_name;
-    ROS_INFO("Saving aligned source cloud to: %s", aligned_source_name.c_str());
-    pcl::io::savePCDFile(aligned_source_name, *aligned_source);
 
     ros::Rate rate(1);
     while (ros::ok())

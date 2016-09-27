@@ -106,6 +106,8 @@ int main(int argc, char** argv)
     }
 
     pcl::GeneralizedIterativeClosestPoint<pcl::PointXYZ, pcl::PointXYZ> icp;
+    icp.setMaxCorrespondenceDistance(radius);
+    icp.setMaximumIterations(50);
     icp.setInputSource(filtered_source_cloud);
     icp.setInputTarget(target_cloud);
     pcl::PointCloud<PointType>::Ptr aligned_source = boost::make_shared<pcl::PointCloud<PointType>>();
@@ -114,6 +116,13 @@ int main(int argc, char** argv)
     target_cloud->header.frame_id = "map";
     aligned_source->header.frame_id = "map";
 
+
+
+    std::string aligned_source_name = "aligned_" + source_file_name;
+    ROS_INFO("Saving aligned source cloud to: %s", aligned_source_name.c_str());
+    pcl::io::savePCDFile(aligned_source_name, *aligned_source);
+    aligned_source->clear();
+    pcl::transformPointCloud (*source_cloud, *aligned_source, icp.getFinalTransformation());
     if (ground_truth)
     {
         double mean_error_after = 0;
@@ -134,11 +143,6 @@ int main(int argc, char** argv)
         ROS_INFO("Mean error before alignment: %f", mean_error_before);
         ROS_INFO("Mean error after alignment: %f,", mean_error_after);
     }
-
-    std::string aligned_source_name = "aligned_" + source_file_name;
-    ROS_INFO("Saving aligned source cloud to: %s", aligned_source_name.c_str());
-    pcl::io::savePCDFile(aligned_source_name, *aligned_source);
-
     ros::Rate rate(1);
     while (ros::ok())
     {

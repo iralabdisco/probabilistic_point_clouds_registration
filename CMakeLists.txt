@@ -5,7 +5,7 @@ project(point_cloud_registration)
 find_package(catkin_simple REQUIRED)
 find_package(VTK REQUIRED)
 # find_package(Boost COMPONENTS thread system filesystem program_options date_time REQUIRED)
-#find_package(PCL 1.7 REQUIRED)
+find_package(PCL 1.8 REQUIRED)
 #find_package(VTK REQUIRED)
 #find_package(Ceres REQUIRED)
 

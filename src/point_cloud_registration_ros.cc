@@ -11,6 +11,7 @@
 #include <pcl/point_types.h>
 #include <ros/ros.h>
 
+#include <ctime>
 
 #include "point_cloud_registration/point_cloud_registration.h"
 
@@ -18,6 +19,7 @@ typedef pcl::PointXYZ PointType;
 
 using point_cloud_registration::PointCloudRegistration;
 using point_cloud_registration::PointCloudRegistrationParams;
+using namespace std;
 
 int main(int argc, char** argv)
 {
@@ -152,6 +154,8 @@ int main(int argc, char** argv)
     params.dof = std::numeric_limits<double>::infinity();
     params.max_neighbours = max_neighbours;
     params.dimension = 3;
+
+    clock_t begin = clock();
     PointCloudRegistration registration(*filtered_source_cloud, *target_cloud, data_association, params);
     ceres::Solver::Options options;
     options.linear_solver_type = ceres::DENSE_QR;
@@ -162,7 +166,10 @@ int main(int argc, char** argv)
     options.num_threads = 8;
     ceres::Solver::Summary summary;
     registration.solve(options, &summary);
+    clock_t end = clock();
+    double elapsed_secs = double(end - begin) / CLOCKS_PER_SEC;
 
+    ROS_INFO_STREAM("Elapsed time: "<<elapsed_secs);
     ROS_INFO_STREAM(summary.FullReport());
     auto estimated_transform = registration.transformation();
     pcl::PointCloud<PointType>::Ptr aligned_source = boost::make_shared<pcl::PointCloud<PointType>>();
