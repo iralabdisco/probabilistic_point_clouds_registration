@@ -11,7 +11,7 @@
 namespace point_cloud_registration
 {
 
-constexpr double pi()
+inline double pi()
 {
     return std::atan(1) * 4;
 }
