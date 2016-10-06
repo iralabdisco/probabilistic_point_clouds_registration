@@ -20,7 +20,7 @@ add_library(${PROJECT_NAME}
   include/point_cloud_registration/error_term.hpp)
 
 add_executable(point_cloud_registration src/point_cloud_registration_ex.cc)
-#add_executable(icp_registration src/icp_registration.cc)
+add_executable(icp_registration src/icp_registration.cc)
 #add_executable(ndt_registration src/ndt_registration.cc)
 
 add_executable(${PROJECT_NAME}_test
@@ -30,3 +30,4 @@ add_executable(${PROJECT_NAME}_test
 
 target_link_libraries(${PROJECT_NAME}_test ${PROJECT_NAME} ${GTEST_LIBRARIES} ${CERES_LIBRARIES} pthread)
 target_link_libraries(point_cloud_registration ${PROJECT_NAME} ${CERES_LIBRARIES} ${PCL_LIBRARIES})
+target_link_libraries(icp_registration ${PCL_LIBRARIES})
