@@ -21,7 +21,7 @@ using point_cloud_registration::PointCloudRegistrationParams;
 int main(int argc, char** argv)
 {
     int max_neighbours;
-    double dof, radius, source_filter_size, target_filter_size;
+    float dof, radius, source_filter_size, target_filter_size;
     bool use_gaussian = false, ground_truth = false;
     std::string source_file_name;
     std::string target_file_name;

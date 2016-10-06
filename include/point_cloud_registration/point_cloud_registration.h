@@ -34,9 +34,9 @@ private:
     double rotation_[4];
     double translation_[3];
     Eigen::SparseMatrix<int, Eigen::RowMajor> data_association_;
+    PointCloudRegistrationParams parameters_;
     ProbabilisticWeights weight_updater_;
     std::unique_ptr<WeightUpdaterCallback> weight_updater_callback_;
-    PointCloudRegistrationParams parameters_;
 };
 
 }  // namespace point_cloud_registration
