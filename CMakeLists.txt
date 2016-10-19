@@ -1,6 +1,17 @@
 cmake_minimum_required (VERSION 2.8)
 project(probabilistic_point_cloud_registration)
 
+#Add all files in subdirectories of the project in
+# a dummy_target so qtcreator have access to all files
+FILE(GLOB children ${CMAKE_SOURCE_DIR}/*)
+FOREACH(child ${children})
+  IF(IS_DIRECTORY ${child})
+    file(GLOB_RECURSE dir_files "${child}/*")
+    LIST(APPEND extra_files ${dir_files})
+  ENDIF()
+ENDFOREACH()
+add_custom_target(dummy_${PROJECT_NAME} SOURCES ${extra_files})
+
 find_package(Boost REQUIRED)
 find_package(PCL 1.8 REQUIRED)
 find_package(Ceres REQUIRED)
