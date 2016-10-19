@@ -5,9 +5,9 @@
 //#include <pcl/visualization/pcl_visualizer.h>
 #include <gtest/gtest.h>
 #include <pcl/common/transforms.h>
-#include "point_cloud_registration/point_cloud_registration.h"
+#include "point_cloud_registration/point_cloud_registration_iteration.h"
 
-using point_cloud_registration::PointCloudRegistration;
+using point_cloud_registration::PointCloudRegistrationIteration;
 using point_cloud_registration::PointCloudRegistrationParams;
 
 pcl::PointCloud<pcl::PointXYZ> generateCloud()
@@ -17,11 +17,9 @@ pcl::PointCloud<pcl::PointXYZ> generateCloud()
     int height = 50;
     cloud.reserve(width * height);
     double x = 0;
-    for (std::size_t i = 0; i < width; ++i)
-    {
+    for (std::size_t i = 0; i < width; ++i) {
         double y = 0;
-        for (std::size_t j = 0; j < height; ++j)
-        {
+        for (std::size_t j = 0; j < height; ++j) {
             cloud.push_back(pcl::PointXYZ(x, y, sin(x) + cos(y)));
             y += 0.5;
         }
@@ -38,10 +36,10 @@ TEST(PointCloudRegistrationTestSuite, exactDataAssociationGaussianTest)
     transform.translation() << 2.5, 0.0, 0.0;
     transform.prerotate (Eigen::AngleAxisd (0.34, Eigen::Vector3d::UnitZ()));
     pcl::transformPointCloud(source_cloud, target_cloud, transform);
-    Eigen::SparseMatrix<int, Eigen::RowMajor> data_association(source_cloud.size(), target_cloud.size());
+    Eigen::SparseMatrix<int, Eigen::RowMajor> data_association(source_cloud.size(),
+                                                               target_cloud.size());
     std::vector<Eigen::Triplet<int>> tripletList;
-    for (std::size_t i = 0; i < source_cloud.size(); ++i)
-    {
+    for (std::size_t i = 0; i < source_cloud.size(); ++i) {
         tripletList.push_back(Eigen::Triplet<int>(i, i, 1));
     }
     data_association.setFromTriplets(tripletList.begin(), tripletList.end());
@@ -50,7 +48,7 @@ TEST(PointCloudRegistrationTestSuite, exactDataAssociationGaussianTest)
     params.dof = std::numeric_limits<double>::infinity();
     params.max_neighbours = 3;
     params.dimension = 3;
-    PointCloudRegistration registration(source_cloud, target_cloud, data_association, params);
+    PointCloudRegistrationIteration registration(source_cloud, target_cloud, data_association, params);
     ceres::Solver::Options options;
     options.linear_solver_type = ceres::SPARSE_NORMAL_CHOLESKY;
     options.use_nonmonotonic_steps = true;
@@ -65,8 +63,7 @@ TEST(PointCloudRegistrationTestSuite, exactDataAssociationGaussianTest)
     pcl::PointCloud<pcl::PointXYZ> aligned_source;
     pcl::transformPointCloud (source_cloud, aligned_source, estimated_transform);
     double mean_error = 0;
-    for (std::size_t i = 0; i < target_cloud.size(); ++i)
-    {
+    for (std::size_t i = 0; i < target_cloud.size(); ++i) {
         double error = std::sqrt(std::pow(target_cloud.at(i).x - aligned_source[i].x, 2) +
                                  std::pow(target_cloud.at(i).y - aligned_source[i].y, 2) +
                                  std::pow(target_cloud.at(i).z - aligned_source[i].z, 2));
@@ -84,10 +81,10 @@ TEST(PointCloudRegistrationTestSuite, exactDataAssociationTDistributionTest)
     transform.translation() << 2.5, 0.0, 0.0;
     transform.prerotate (Eigen::AngleAxisd (0.34, Eigen::Vector3d::UnitZ()));
     pcl::transformPointCloud(source_cloud, target_cloud, transform);
-    Eigen::SparseMatrix<int, Eigen::RowMajor> data_association(source_cloud.size(), target_cloud.size());
+    Eigen::SparseMatrix<int, Eigen::RowMajor> data_association(source_cloud.size(),
+                                                               target_cloud.size());
     std::vector<Eigen::Triplet<int>> tripletList;
-    for (std::size_t i = 0; i < source_cloud.size(); ++i)
-    {
+    for (std::size_t i = 0; i < source_cloud.size(); ++i) {
         tripletList.push_back(Eigen::Triplet<int>(i, i, 1));
     }
     data_association.setFromTriplets(tripletList.begin(), tripletList.end());
@@ -96,7 +93,7 @@ TEST(PointCloudRegistrationTestSuite, exactDataAssociationTDistributionTest)
     params.dof = 5;
     params.max_neighbours = 3;
     params.dimension = 3;
-    PointCloudRegistration registration(source_cloud, target_cloud, data_association, params);
+    PointCloudRegistrationIteration registration(source_cloud, target_cloud, data_association, params);
     ceres::Solver::Options options;
     options.linear_solver_type = ceres::SPARSE_NORMAL_CHOLESKY;
     options.use_nonmonotonic_steps = true;
@@ -111,8 +108,7 @@ TEST(PointCloudRegistrationTestSuite, exactDataAssociationTDistributionTest)
     pcl::PointCloud<pcl::PointXYZ> aligned_source;
     pcl::transformPointCloud (source_cloud, aligned_source, estimated_transform);
     double mean_error = 0;
-    for (std::size_t i = 0; i < target_cloud.size(); ++i)
-    {
+    for (std::size_t i = 0; i < target_cloud.size(); ++i) {
         double error = std::sqrt(std::pow(target_cloud.at(i).x - aligned_source[i].x, 2) +
                                  std::pow(target_cloud.at(i).y - aligned_source[i].y, 2) +
                                  std::pow(target_cloud.at(i).z - aligned_source[i].z, 2));
