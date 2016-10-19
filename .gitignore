@@ -1,0 +1,3 @@
+build/*
+datasets/*
+CMakeLists.txt.user
