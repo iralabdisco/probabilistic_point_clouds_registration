@@ -1,60 +1,62 @@
+#include <thread>
+
+#include <pcl/kdtree/kdtree_flann.h>
+
 #include "point_cloud_registration/point_cloud_registration.h"
 
-namespace point_cloud_registration
-{
+namespace point_cloud_registration {
 
 PointCloudRegistration::PointCloudRegistration(
-    const pcl::PointCloud<pcl::PointXYZ> &source_cloud,
-    const pcl::PointCloud<pcl::PointXYZ> &target_cloud,
-    const Eigen::SparseMatrix<int, Eigen::RowMajor> &data_association,
-    PointCloudRegistrationParams parameters)
-    : error_terms_(),
-      data_association_(data_association),
-      parameters_(parameters),
-      weight_updater_(parameters.dof, parameters.dimension,
-                      parameters.max_neighbours)
+    pcl::PointCloud<pcl::PointXYZ>::Ptr source_cloud,
+    pcl::PointCloud<pcl::PointXYZ>::Ptr target_cloud,
+    PointCloudRegistrationParams parameters): parameters_(parameters), source_cloud_(source_cloud),
+    target_cloud_(target_cloud), transformation_(Eigen::Affine3d::Identity())
 {
-    std::copy(std::begin(parameters_.initial_rotation),
-              std::end(parameters_.initial_rotation), std::begin(rotation_));
-    std::copy(std::begin(parameters_.initial_translation),
-              std::end(parameters_.initial_translation),
-              std::begin(translation_));
-    error_terms_.reserve(source_cloud.size());
-    problem_.reset(new ceres::Problem());
-    for (size_t i = 0; i < data_association.outerSize(); i++)
-    {
-        for (Eigen::SparseMatrix<int, Eigen::RowMajor>::InnerIterator it(
-                    data_association, i);
-                it; ++it)
-        {
-            ErrorTerm* error_term = new ErrorTerm(source_cloud[it.row()], target_cloud[it.col()]);
-            error_terms_.push_back(error_term);
-            problem_->AddResidualBlock(
-                new ceres::AutoDiffCostFunction < ErrorTerm, ErrorTerm::kResiduals, 4,
-                3 > (error_term),
-                error_term->weight(), rotation_, translation_);
+}
+
+void PointCloudRegistration::align(bool verbose)
+{
+    pcl::KdTreeFLANN<pcl::PointXYZ> kdtree;
+    kdtree.setInputCloud(target_cloud_);
+    std::vector<float> distances;
+    Eigen::SparseMatrix<int, Eigen::RowMajor> data_association(source_cloud_->size(),
+                                                               target_cloud_->size());
+    std::vector<Eigen::Triplet<int>> tripletList;
+    for (std::size_t i = 0; i < source_cloud_->size(); i++) {
+        std::vector<int> neighbours;
+        kdtree.radiusSearch(*source_cloud_, i, parameters_.radius, neighbours, distances,
+                            parameters_.max_neighbours);
+        for (int j : neighbours) {
+            tripletList.push_back(Eigen::Triplet<int>(i, j, 1));
         }
     }
-    weight_updater_callback_.reset(new WeightUpdaterCallback(&data_association_, &parameters_, &error_terms_, &weight_updater_, rotation_, translation_));
-    (*weight_updater_callback_)(ceres::IterationSummary());
+    data_association.setFromTriplets(tripletList.begin(), tripletList.end());
+    data_association.makeCompressed();
+
+    PointCloudRegistrationIteration registration(*source_cloud_, *target_cloud_,
+                                                 data_association,
+                                                 parameters_);
+    ceres::Solver::Options options;
+    options.linear_solver_type = ceres::DENSE_QR;
+    options.use_nonmonotonic_steps = true;
+    if (verbose) {
+        options.minimizer_progress_to_stdout = true;
+    } else {
+        options.minimizer_progress_to_stdout = false;
+    }
+    options.max_num_iterations = std::numeric_limits<int>::max();
+    options.function_tolerance = 10e-16;
+//    options.num_threads = std::thread::hardware_concurrency();
+    options.num_threads = 8;
+    ceres::Solver::Summary summary;
+    registration.solve(options, &summary);
+    transformation_ = registration.transformation();
+    if (verbose) {
+        std::cout << summary.FullReport() << std::endl;
+    }
 }
 
-void PointCloudRegistration::solve(ceres::Solver::Options options,
-                                   ceres::Solver::Summary *summary)
-{
-    options.callbacks.push_back(weight_updater_callback_.get());
-    options.update_state_every_iteration = true;
-    ceres::Solve(options, problem_.get(), summary);
-}
 
-Eigen::Affine3d PointCloudRegistration::transformation()
-{
-    Eigen::Affine3d affine = Eigen::Affine3d::Identity();
-    Eigen::Quaternion<double> estimated_rot(rotation_[0], rotation_[1],
-                                            rotation_[2], rotation_[3]);
-    estimated_rot.normalize();
-    affine.rotate(estimated_rot);
-    affine.pretranslate(Eigen::Vector3d(translation_));
-    return affine;
-}
+
+
 }  // namespace point_cloud_registration
