@@ -46,8 +46,7 @@ void PointCloudRegistration::align(bool verbose)
     }
     options.max_num_iterations = std::numeric_limits<int>::max();
     options.function_tolerance = 10e-16;
-//    options.num_threads = std::thread::hardware_concurrency();
-    options.num_threads = 8;
+    options.num_threads = std::thread::hardware_concurrency();
     ceres::Solver::Summary summary;
     registration.solve(options, &summary);
     transformation_ = registration.transformation();
