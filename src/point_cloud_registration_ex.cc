@@ -39,6 +39,8 @@ int main(int argc, char **argv)
                                                  "The leaf size of the voxel filter of the target cloud", false, 0, "float", cmd);
         TCLAP::ValueArg<int> max_neighbours_arg("n", "max_neighbours",
                                                 "The max cardinality of the neighbours' set", false, 10, "int", cmd);
+        TCLAP::ValueArg<int> num_iter_arg("i", "num_iter",
+                                          "The number of iterations to perform", false, 10, "int", cmd);
         TCLAP::ValueArg<float> dof_arg("d", "dof", "The Degree of freedom of t-distribution", false, 5,
                                        "float", cmd);
         TCLAP::ValueArg<float> radius_arg("r", "radius", "The radius of the neighborhood search", false, 3,
@@ -54,6 +56,7 @@ int main(int argc, char **argv)
         use_gaussian = use_gaussian_arg.getValue();
         params.dof = dof_arg.getValue();
         params.radius = radius_arg.getValue();
+        params.n_iter = num_iter_arg.getValue();
         source_file_name = source_file_name_arg.getValue();
         target_file_name = target_file_name_arg.getValue();
         source_filter_size = source_filter_arg.getValue();
