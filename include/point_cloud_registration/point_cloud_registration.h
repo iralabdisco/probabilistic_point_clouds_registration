@@ -1,15 +1,11 @@
 #ifndef POINT_CLOUD_REGISTRATION_POINT_CLOUD_REGISTRATION_H
 #define POINT_CLOUD_REGISTRATION_POINT_CLOUD_REGISTRATION_H
 
-#include <ceres/ceres.h>
 #include <Eigen/Core>
-#include <Eigen/Sparse>
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
 
-#include <vector>
-
-#include "point_cloud_registration/point_cloud_registration_iteration.h"
+#include "point_cloud_registration/point_cloud_registration_iteration.hpp"
 #include "point_cloud_registration/point_cloud_registration_params.hpp"
 
 namespace point_cloud_registration {

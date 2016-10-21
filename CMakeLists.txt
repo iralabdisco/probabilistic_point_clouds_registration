@@ -25,7 +25,7 @@ add_definitions(${PCL_DEFINITIONS})
 
 add_library(${PROJECT_NAME}
   src/point_cloud_registration.cc
-  src/point_cloud_registration_iteration.cc
+  include/point_cloud_registration/point_cloud_registration_iteration.hpp
   include/point_cloud_registration/weight_updater_callback.hpp
   include/point_cloud_registration/point_cloud_registration_params.hpp
   include/point_cloud_registration/probabilistic_weights.hpp

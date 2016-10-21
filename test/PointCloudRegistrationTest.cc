@@ -5,7 +5,7 @@
 //#include <pcl/visualization/pcl_visualizer.h>
 #include <gtest/gtest.h>
 #include <pcl/common/transforms.h>
-#include "point_cloud_registration/point_cloud_registration_iteration.h"
+#include "point_cloud_registration/point_cloud_registration_iteration.hpp"
 
 using point_cloud_registration::PointCloudRegistrationIteration;
 using point_cloud_registration::PointCloudRegistrationParams;
