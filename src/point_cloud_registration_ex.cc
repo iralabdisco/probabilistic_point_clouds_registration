@@ -7,7 +7,6 @@
 #include <pcl/filters/filter.h>
 #include <pcl/filters/voxel_grid.h>
 #include <pcl/io/pcd_io.h>
-#include <pcl/kdtree/kdtree_flann.h>
 #include <pcl/point_types.h>
 #include <tclap/CmdLine.h>
 
@@ -20,7 +19,7 @@ using point_cloud_registration::PointCloudRegistrationParams;
 
 int main(int argc, char **argv)
 {
-    float radius, source_filter_size, target_filter_size;
+    float source_filter_size, target_filter_size;
     bool use_gaussian = false, ground_truth = false;
     std::string source_file_name;
     std::string target_file_name;
@@ -40,6 +39,8 @@ int main(int argc, char **argv)
                                                  "The leaf size of the voxel filter of the target cloud", false, 0, "float", cmd);
         TCLAP::ValueArg<int> max_neighbours_arg("n", "max_neighbours",
                                                 "The max cardinality of the neighbours' set", false, 10, "int", cmd);
+        TCLAP::ValueArg<int> num_iter_arg("i", "num_iter",
+                                          "The number of iterations to perform", false, 10, "int", cmd);
         TCLAP::ValueArg<float> dof_arg("d", "dof", "The Degree of freedom of t-distribution", false, 5,
                                        "float", cmd);
         TCLAP::ValueArg<float> radius_arg("r", "radius", "The radius of the neighborhood search", false, 3,
@@ -54,7 +55,8 @@ int main(int argc, char **argv)
         params.max_neighbours = max_neighbours_arg.getValue();
         use_gaussian = use_gaussian_arg.getValue();
         params.dof = dof_arg.getValue();
-        radius = radius_arg.getValue();
+        params.radius = radius_arg.getValue();
+        params.n_iter = num_iter_arg.getValue();
         source_file_name = source_file_name_arg.getValue();
         target_file_name = target_file_name_arg.getValue();
         source_filter_size = source_filter_arg.getValue();
@@ -77,7 +79,7 @@ int main(int argc, char **argv)
     } else {
         std::cout << "Using a t-distribution with " << params.dof << " dof" << std::endl;
     }
-    std::cout << "Radius of the neighborhood search: " << radius << std::endl;
+    std::cout << "Radius of the neighborhood search: " << params.radius << std::endl;
     std::cout << "Max number of neighbours: " << params.max_neighbours << std::endl;
 
 
@@ -124,36 +126,9 @@ int main(int argc, char **argv)
         filter.setLeafSize(target_filter_size, target_filter_size, target_filter_size);
         filter.filter(*target_cloud);
     }
-    pcl::KdTreeFLANN<PointType> kdtree;
-    kdtree.setInputCloud(target_cloud);
-    std::vector<float> distances;
-    Eigen::SparseMatrix<int, Eigen::RowMajor> data_association(filtered_source_cloud->size(),
-                                                               target_cloud->size());
-    std::vector<Eigen::Triplet<int>> tripletList;
-    for (std::size_t i = 0; i < filtered_source_cloud->size(); i++) {
-        std::vector<int> neighbours;
-        kdtree.radiusSearch(*filtered_source_cloud, i, radius, neighbours, distances,
-                            params.max_neighbours);
-        for (int j : neighbours) {
-            tripletList.push_back(Eigen::Triplet<int>(i, j, 1));
-        }
-    }
-    data_association.setFromTriplets(tripletList.begin(), tripletList.end());
-    data_association.makeCompressed();
 
-    PointCloudRegistration registration(*filtered_source_cloud, *target_cloud, data_association,
-                                        params);
-    ceres::Solver::Options options;
-    options.linear_solver_type = ceres::DENSE_QR;
-    options.use_nonmonotonic_steps = true;
-    options.minimizer_progress_to_stdout = true;
-    options.max_num_iterations = std::numeric_limits<int>::max();
-    options.function_tolerance = 10e-16;
-    options.num_threads = 8;
-    ceres::Solver::Summary summary;
-    registration.solve(options, &summary);
-
-    std::cout << summary.FullReport() << std::endl;
+    PointCloudRegistration registration(filtered_source_cloud, target_cloud, params);
+    registration.align(true);
     auto estimated_transform = registration.transformation();
     pcl::PointCloud<PointType>::Ptr aligned_source = boost::make_shared<pcl::PointCloud<PointType>>();
     pcl::transformPointCloud (*source_cloud, *aligned_source, estimated_transform);
