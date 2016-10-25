@@ -17,7 +17,8 @@ public:
         pcl::PointCloud<pcl::PointXYZ>::Ptr source_cloud,
         pcl::PointCloud<pcl::PointXYZ>::Ptr target_cloud,
         PointCloudRegistrationParams parameters);
-    void align(bool verbose);
+    void align();
+    bool hasConverged();
     inline Eigen::Affine3d transformation()
     {
         return transformation_;
@@ -28,6 +29,7 @@ private:
     pcl::PointCloud<pcl::PointXYZ>::Ptr target_cloud_;
     pcl::PointCloud<pcl::PointXYZ>::Ptr source_cloud_;
     Eigen::Affine3d transformation_;
+    int current_iteration_;
 };
 
 }  // namespace point_cloud_registration

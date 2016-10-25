@@ -57,6 +57,7 @@ int main(int argc, char **argv)
         params.dof = dof_arg.getValue();
         params.radius = radius_arg.getValue();
         params.n_iter = num_iter_arg.getValue();
+        params.verbose = true;
         source_file_name = source_file_name_arg.getValue();
         target_file_name = target_file_name_arg.getValue();
         source_filter_size = source_filter_arg.getValue();
@@ -128,7 +129,7 @@ int main(int argc, char **argv)
     }
 
     PointCloudRegistration registration(filtered_source_cloud, target_cloud, params);
-    registration.align(true);
+    registration.align();
     auto estimated_transform = registration.transformation();
     pcl::PointCloud<PointType>::Ptr aligned_source = boost::make_shared<pcl::PointCloud<PointType>>();
     pcl::transformPointCloud (*source_cloud, *aligned_source, estimated_transform);

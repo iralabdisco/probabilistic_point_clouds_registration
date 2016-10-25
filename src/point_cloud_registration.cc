@@ -12,14 +12,14 @@ PointCloudRegistration::PointCloudRegistration(
     pcl::PointCloud<pcl::PointXYZ>::Ptr source_cloud,
     pcl::PointCloud<pcl::PointXYZ>::Ptr target_cloud,
     PointCloudRegistrationParams parameters): parameters_(parameters),
-    target_cloud_(target_cloud), transformation_(Eigen::Affine3d::Identity())
+    target_cloud_(target_cloud), transformation_(Eigen::Affine3d::Identity()), current_iteration_(0)
 {
     source_cloud_ = boost::make_shared<pcl::PointCloud<pcl::PointXYZ>>(*source_cloud);
 }
 
-void PointCloudRegistration::align(bool verbose)
+void PointCloudRegistration::align()
 {
-    for (int iter = 0; iter < parameters_.n_iter; iter++) {
+    while (!hasConverged()) {
         pcl::KdTreeFLANN<pcl::PointXYZ> kdtree;
         kdtree.setInputCloud(target_cloud_);
         std::vector<float> distances;
@@ -43,7 +43,7 @@ void PointCloudRegistration::align(bool verbose)
         ceres::Solver::Options options;
         options.linear_solver_type = ceres::DENSE_QR;
         options.use_nonmonotonic_steps = true;
-        if (verbose) {
+        if (parameters_.verbose) {
             options.minimizer_progress_to_stdout = true;
         } else {
             options.minimizer_progress_to_stdout = false;
@@ -54,12 +54,25 @@ void PointCloudRegistration::align(bool verbose)
         ceres::Solver::Summary summary;
         registration.solve(options, &summary);
         transformation_ = registration.transformation();
-        if (verbose) {
+        if (parameters_.verbose) {
             std::cout << summary.FullReport() << std::endl;
         }
         pcl::transformPointCloud (*source_cloud_, *source_cloud_, transformation_);
+        current_iteration_++;
     }
 
+}
+
+bool PointCloudRegistration::hasConverged()
+{
+    if (current_iteration_ == parameters_.n_iter) {
+        if (parameters_.verbose) {
+            std::cout << "Terminating because maximum number of iterations has been reached (" <<
+                      current_iteration_ << " iter)" << std::endl;
+        }
+        return true;
+    }
+    return false;
 }
 
 
