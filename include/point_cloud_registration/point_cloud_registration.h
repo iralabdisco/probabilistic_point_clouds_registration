@@ -21,15 +21,21 @@ public:
     bool hasConverged();
     inline Eigen::Affine3d transformation()
     {
-        return transformation_;
+        return transformation_history_.back();
+    }
+
+    inline std::vector<Eigen::Affine3d> transformation_history()
+    {
+        return transformation_history_;
     }
 
 private:
     PointCloudRegistrationParams parameters_;
     pcl::PointCloud<pcl::PointXYZ>::Ptr target_cloud_;
     pcl::PointCloud<pcl::PointXYZ>::Ptr source_cloud_;
-    Eigen::Affine3d transformation_;
+    pcl::PointCloud<pcl::PointXYZ>::Ptr prev_source_cloud_;
     int current_iteration_;
+    std::vector<Eigen::Affine3d> transformation_history_;
 };
 
 }  // namespace point_cloud_registration

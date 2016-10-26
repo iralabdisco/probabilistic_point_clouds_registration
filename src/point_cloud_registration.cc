@@ -1,6 +1,7 @@
 #include <thread>
 
 #include <boost/make_shared.hpp>
+#include <pcl/common/distances.h>
 #include <pcl/common/transforms.h>
 #include <pcl/kdtree/kdtree_flann.h>
 
@@ -8,13 +9,16 @@
 
 namespace point_cloud_registration {
 
+using pcl::euclideanDistance;
+
 PointCloudRegistration::PointCloudRegistration(
     pcl::PointCloud<pcl::PointXYZ>::Ptr source_cloud,
     pcl::PointCloud<pcl::PointXYZ>::Ptr target_cloud,
     PointCloudRegistrationParams parameters): parameters_(parameters),
-    target_cloud_(target_cloud), transformation_(Eigen::Affine3d::Identity()), current_iteration_(0)
+    target_cloud_(target_cloud), current_iteration_(0)
 {
     source_cloud_ = boost::make_shared<pcl::PointCloud<pcl::PointXYZ>>(*source_cloud);
+    prev_source_cloud_ = boost::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
 }
 
 void PointCloudRegistration::align()
@@ -53,11 +57,17 @@ void PointCloudRegistration::align()
         options.num_threads = std::thread::hardware_concurrency();
         ceres::Solver::Summary summary;
         registration.solve(options, &summary);
-        transformation_ = registration.transformation();
+        Eigen::Affine3d current_trans;
+        if (current_iteration_ > 0) {
+            current_trans = registration.transformation() * transformation_history_.back();
+        } else {
+            current_trans = registration.transformation();
+        }
+        transformation_history_.push_back(current_trans);
         if (parameters_.verbose) {
             std::cout << summary.FullReport() << std::endl;
         }
-        pcl::transformPointCloud (*source_cloud_, *source_cloud_, transformation_);
+        pcl::transformPointCloud (*source_cloud_, *source_cloud_, registration.transformation());
         current_iteration_++;
     }
 
@@ -72,6 +82,20 @@ bool PointCloudRegistration::hasConverged()
         }
         return true;
     }
+    if (current_iteration_ > 1) {
+        double mse = 0;
+        for (int i = 0; i < source_cloud_->size(); i++) {
+            mse += euclideanDistance(source_cloud_->at(i), prev_source_cloud_->at(i));
+        }
+        mse /= source_cloud_->size();
+        if (mse <= parameters_.dist_treshold) {
+            std::cout << "Terminating because mse is below the treshould (mse = " << mse << "; threshold = " <<
+                      parameters_.dist_treshold << ")" << std::endl;
+            return true;
+        }
+    }
+    *prev_source_cloud_ = *source_cloud_;
+
     return false;
 }
 

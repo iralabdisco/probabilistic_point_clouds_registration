@@ -40,11 +40,13 @@ int main(int argc, char **argv)
         TCLAP::ValueArg<int> max_neighbours_arg("n", "max_neighbours",
                                                 "The max cardinality of the neighbours' set", false, 10, "int", cmd);
         TCLAP::ValueArg<int> num_iter_arg("i", "num_iter",
-                                          "The number of iterations to perform", false, 10, "int", cmd);
+                                          "The maximum number of iterations to perform", false, 10, "int", cmd);
         TCLAP::ValueArg<float> dof_arg("d", "dof", "The Degree of freedom of t-distribution", false, 5,
                                        "float", cmd);
         TCLAP::ValueArg<float> radius_arg("r", "radius", "The radius of the neighborhood search", false, 3,
                                           "float", cmd);
+        TCLAP::ValueArg<float> dist_tresh_arg("x", "dist_treshold",
+                                              "If the mse drops below dist_treshold, the algorithm terminate", false, 0.01, "float", cmd);
         TCLAP::SwitchArg use_gaussian_arg("u", "use_gaussian",
                                           "Whether to use a gaussian instead the a t-distribution", cmd, false);
         TCLAP::ValueArg<std::string> ground_truth_arg("g", "ground_truth",
@@ -58,6 +60,7 @@ int main(int argc, char **argv)
         params.radius = radius_arg.getValue();
         params.n_iter = num_iter_arg.getValue();
         params.verbose = true;
+        params.dist_treshold = dist_tresh_arg.getValue();
         source_file_name = source_file_name_arg.getValue();
         target_file_name = target_file_name_arg.getValue();
         source_filter_size = source_filter_arg.getValue();
@@ -82,7 +85,8 @@ int main(int argc, char **argv)
     }
     std::cout << "Radius of the neighborhood search: " << params.radius << std::endl;
     std::cout << "Max number of neighbours: " << params.max_neighbours << std::endl;
-
+    std::cout << "Max number of iterations: " << params.n_iter << std::endl;
+    std::cout << "MSE treshold: " << params.dist_treshold << std::endl;
 
     std::cout << "Loading source point cloud from " << source_file_name << std::endl;
     pcl::PointCloud<PointType>::Ptr source_cloud =
@@ -152,7 +156,13 @@ int main(int argc, char **argv)
         std::cout << "Mean error before alignment: " << mean_error_before << std::endl;
         std::cout << "Mean error after alignment: " << mean_error_after << std::endl;
     }
-
+    std::cout << "Transformation history:" << std::endl;
+    for (auto trans : registration.transformation_history()) {
+        Eigen::Quaterniond rotq(trans.rotation());
+        std::cout << "T: " << trans.translation().x() << ", " << trans.translation().y() << ", " <<
+                  trans.translation().z() << " ||| R: " << rotq.x() << ", " << rotq.y() << ", " << rotq.z() << ", " <<
+                  rotq.w() << std::endl;
+    }
     std::string aligned_source_name = "aligned_" + source_file_name;
     std::cout << "Saving aligned source cloud to: " << aligned_source_name.c_str() << std::endl;
     pcl::io::savePCDFile(aligned_source_name, *aligned_source);
