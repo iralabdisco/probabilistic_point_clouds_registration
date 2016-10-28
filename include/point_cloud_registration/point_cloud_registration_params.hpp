@@ -10,6 +10,7 @@ struct PointCloudRegistrationParams {
     int n_iter = 10;
     double dist_treshold = 0.01;
     bool verbose = false;
+    bool debug = false;
     double initial_rotation[4] = {1, 0, 0, 0};
     double initial_translation[3] = {0, 0, 0};
 };

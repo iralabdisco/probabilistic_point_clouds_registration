@@ -1,6 +1,8 @@
+#include <fstream>
 #include <thread>
 
 #include <boost/make_shared.hpp>
+#include <pcl/common/angles.h>
 #include <pcl/common/distances.h>
 #include <pcl/common/transforms.h>
 #include <pcl/kdtree/kdtree_flann.h>
@@ -19,6 +21,9 @@ PointCloudRegistration::PointCloudRegistration(
 {
     source_cloud_ = boost::make_shared<pcl::PointCloud<pcl::PointXYZ>>(*source_cloud);
     prev_source_cloud_ = boost::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
+    if (parameters_.debug) {
+        debug_file_.open("debug_file.txt");
+    }
 }
 
 void PointCloudRegistration::align()
@@ -68,7 +73,18 @@ void PointCloudRegistration::align()
             std::cout << summary.FullReport() << std::endl;
         }
         pcl::transformPointCloud (*source_cloud_, *source_cloud_, registration.transformation());
+        if (parameters_.debug) {
+            auto rpy = current_trans.rotation().eulerAngles(0, 1, 2);
+            debug_file_ << current_iteration_ << ", " << summary.num_successful_steps << ", " <<
+                        summary.initial_cost << ", " << summary.final_cost << ", " << current_trans.translation().x() <<
+                        ", " << current_trans.translation().y() << ", " << current_trans.translation().z() << ", " <<
+                        pcl::rad2deg(rpy(0, 0)) << ", " << pcl::rad2deg(rpy(1, 0)) << ", " << pcl::rad2deg(rpy(2,
+                                                                                                               0)) << ", ";
+        }
         current_iteration_++;
+    }
+    if (parameters_.debug) {
+        debug_file_.close();
     }
 
 }
@@ -88,10 +104,17 @@ bool PointCloudRegistration::hasConverged()
             mse += euclideanDistance(source_cloud_->at(i), prev_source_cloud_->at(i));
         }
         mse /= source_cloud_->size();
+        if (parameters_.debug) {
+            debug_file_ << mse << std::endl;
+        }
         if (mse <= parameters_.dist_treshold) {
             std::cout << "Terminating because mse is below the treshould (mse = " << mse << "; threshold = " <<
                       parameters_.dist_treshold << ")" << std::endl;
             return true;
+        }
+    } else {
+        if (parameters_.debug && current_iteration_ == 1) {
+            debug_file_ << "0" << std::endl;
         }
     }
     *prev_source_cloud_ = *source_cloud_;

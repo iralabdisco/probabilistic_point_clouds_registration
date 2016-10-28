@@ -131,7 +131,7 @@ int main(int argc, char **argv)
         filter.setLeafSize(target_filter_size, target_filter_size, target_filter_size);
         filter.filter(*target_cloud);
     }
-
+    params.debug = true;
     PointCloudRegistration registration(filtered_source_cloud, target_cloud, params);
     registration.align();
     auto estimated_transform = registration.transformation();
