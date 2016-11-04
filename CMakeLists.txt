@@ -17,7 +17,7 @@ find_package(PCL 1.8 REQUIRED)
 find_package(Ceres REQUIRED)
 find_package(GTest REQUIRED)
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14")
 
 include_directories(include ${Boost_INCLUDE_DIRS} ${PCL_INCLUDE_DIRS} ${CERES_INCLUDE_DIRS} ${GTEST_INCLUDE_DIRS})
 link_directories(${PCL_LIBRARY_DIRS})
@@ -29,7 +29,8 @@ add_library(${PROJECT_NAME}
   include/point_cloud_registration/weight_updater_callback.hpp
   include/point_cloud_registration/point_cloud_registration_params.hpp
   include/point_cloud_registration/probabilistic_weights.hpp
-  include/point_cloud_registration/error_term.hpp)
+  include/point_cloud_registration/error_term.hpp
+  include/point_cloud_registration/utilities.hpp)
 
 add_executable(point_cloud_registration src/point_cloud_registration_ex.cc)
 add_executable(icp_registration src/icp_registration.cc)

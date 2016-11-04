@@ -1,4 +1,5 @@
 #include <limits>
+#include <memory>
 #include <vector>
 #include <stdlib.h>
 
@@ -132,32 +133,21 @@ int main(int argc, char **argv)
         filter.filter(*target_cloud);
     }
     params.debug = true;
-    PointCloudRegistration registration(filtered_source_cloud, target_cloud, params);
-    registration.align();
-    auto estimated_transform = registration.transformation();
+    std::unique_ptr<PointCloudRegistration> registration;
+    if (ground_truth) {
+        registration = std::make_unique<PointCloudRegistration>(filtered_source_cloud, target_cloud, params,
+                                                                source_ground_truth);
+    } else {
+        registration = std::make_unique<PointCloudRegistration>(filtered_source_cloud, target_cloud,
+                                                                params);
+    }
+    registration->align();
+    auto estimated_transform = registration->transformation();
     pcl::PointCloud<PointType>::Ptr aligned_source = boost::make_shared<pcl::PointCloud<PointType>>();
     pcl::transformPointCloud (*source_cloud, *aligned_source, estimated_transform);
 
-    if (ground_truth) {
-        double mean_error_after = 0;
-        double mean_error_before = 0;
-        for (std::size_t i = 0; i < source_ground_truth->size(); ++i) {
-            double error_after = std::sqrt(std::pow(source_ground_truth->at(i).x - aligned_source->at(i).x, 2) +
-                                           std::pow(source_ground_truth->at(i).y - aligned_source->at(i).y, 2) +
-                                           std::pow(source_ground_truth->at(i).z - aligned_source->at(i).z, 2));
-            double error_before = std::sqrt(std::pow(source_ground_truth->at(i).x - source_cloud->at(i).x, 2) +
-                                            std::pow(source_ground_truth->at(i).y - source_cloud->at(i).y, 2) +
-                                            std::pow(source_ground_truth->at(i).z - source_cloud->at(i).z, 2));
-            mean_error_after += error_after;
-            mean_error_before += error_before;
-        }
-        mean_error_after /= source_ground_truth->size();
-        mean_error_before /= source_ground_truth->size();
-        std::cout << "Mean error before alignment: " << mean_error_before << std::endl;
-        std::cout << "Mean error after alignment: " << mean_error_after << std::endl;
-    }
     std::cout << "Transformation history:" << std::endl;
-    for (auto trans : registration.transformation_history()) {
+    for (auto trans : registration->transformation_history()) {
         Eigen::Quaterniond rotq(trans.rotation());
         std::cout << "T: " << trans.translation().x() << ", " << trans.translation().y() << ", " <<
                   trans.translation().z() << " ||| R: " << rotq.x() << ", " << rotq.y() << ", " << rotq.z() << ", " <<

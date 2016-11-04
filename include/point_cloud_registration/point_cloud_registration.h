@@ -19,6 +19,11 @@ public:
         pcl::PointCloud<pcl::PointXYZ>::Ptr source_cloud,
         pcl::PointCloud<pcl::PointXYZ>::Ptr target_cloud,
         PointCloudRegistrationParams parameters);
+    PointCloudRegistration(
+        pcl::PointCloud<pcl::PointXYZ>::Ptr source_cloud,
+        pcl::PointCloud<pcl::PointXYZ>::Ptr target_cloud,
+        PointCloudRegistrationParams parameters,
+        pcl::PointCloud<pcl::PointXYZ>::Ptr ground_truth_cloud);
     void align();
     bool hasConverged();
     inline Eigen::Affine3d transformation()
@@ -36,6 +41,10 @@ private:
     pcl::PointCloud<pcl::PointXYZ>::Ptr target_cloud_;
     pcl::PointCloud<pcl::PointXYZ>::Ptr source_cloud_;
     pcl::PointCloud<pcl::PointXYZ>::Ptr prev_source_cloud_;
+    pcl::PointCloud<pcl::PointXYZ>::Ptr ground_truth_cloud_;
+    bool ground_truth_;
+    double mse_ground_truth_;
+    double mse_prev_it_;
     int current_iteration_;
     std::vector<Eigen::Affine3d> transformation_history_;
     std::ofstream debug_file_;
