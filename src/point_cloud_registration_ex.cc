@@ -1,6 +1,8 @@
 #include <limits>
 #include <memory>
 #include <vector>
+#include <fstream>
+#include <string>
 #include <stdlib.h>
 
 #include <Eigen/Sparse>
@@ -156,6 +158,19 @@ int main(int argc, char **argv)
     std::string aligned_source_name = "aligned_" + source_file_name;
     std::cout << "Saving aligned source cloud to: " << aligned_source_name.c_str() << std::endl;
     pcl::io::savePCDFile(aligned_source_name, *aligned_source);
-
+    if (params.debug) {
+        std::string report_file_name = source_file_name + "_" + target_file_name + "_summary.txt";
+        std::cout << "Saving registration report to: " << report_file_name << std::endl;
+        std::ofstream report_file;
+        report_file.open(report_file_name);
+        report_file << "Source: " << source_file_name << " with filter size: " << source_filter_size <<
+                    std::endl;
+        report_file << "Target:" << target_file_name << " with filter size: " << target_filter_size <<
+                    std::endl;
+        report_file << "dof: " << params.dof << " | Radius: " << params.radius << " | Max_iter: " <<
+                    params.n_iter << " | Dist_tresh: " << params.dist_treshold << " | Max neigh: " <<
+                    params.max_neighbours << std::endl;
+        report_file << registration->report();
+    }
     return 0;
 }

@@ -1,3 +1,4 @@
+#include <cstdio>
 #include <fstream>
 #include <thread>
 
@@ -20,10 +21,9 @@ PointCloudRegistration::PointCloudRegistration(
     source_cloud_ = boost::make_shared<pcl::PointCloud<pcl::PointXYZ>>(*source_cloud);
     prev_source_cloud_ = boost::make_shared<pcl::PointCloud<pcl::PointXYZ>>(*source_cloud);
     if (parameters_.debug) {
-        debug_file_.open("debug_file.txt");
-        debug_file_ <<
-                    "iter, n_success_steps, initial_cost, final_cost, tx, ty, tz, roll, pitch, yaw, mse_prev_iter, mse_gtruth"
-                    << std::endl;
+        report_ <<
+                "iter, n_success_steps, initial_cost, final_cost, tx, ty, tz, roll, pitch, yaw, mse_prev_iter, mse_gtruth"
+                << std::endl;
     }
     ground_truth_ = false;
 }
@@ -98,18 +98,14 @@ void PointCloudRegistration::align()
 
         if (parameters_.debug) {
             auto rpy = current_trans.rotation().eulerAngles(0, 1, 2);
-            debug_file_ << current_iteration_ << ", " << summary.num_successful_steps << ", " <<
-                        summary.initial_cost << ", " << summary.final_cost << ", " << current_trans.translation().x() <<
-                        ", " << current_trans.translation().y() << ", " << current_trans.translation().z() << ", " <<
-                        pcl::rad2deg(rpy(0, 0)) << ", " << pcl::rad2deg(rpy(1, 0)) << ", " << pcl::rad2deg(rpy(2,
-                                                                                                               0)) << ", " << mse_prev_it_ << ", " << mse_ground_truth_ << std::endl;
+            report_ << current_iteration_ << ", " << summary.num_successful_steps << ", " <<
+                    summary.initial_cost << ", " << summary.final_cost << ", " << current_trans.translation().x() <<
+                    ", " << current_trans.translation().y() << ", " << current_trans.translation().z() << ", " <<
+                    pcl::rad2deg(rpy(0, 0)) << ", " << pcl::rad2deg(rpy(1, 0)) << ", " << pcl::rad2deg(rpy(2,
+                                                                                                           0)) << ", " << mse_prev_it_ << ", " << mse_ground_truth_ << std::endl;
         }
         current_iteration_++;
     }
-    if (parameters_.debug) {
-        debug_file_.close();
-    }
-
 }
 
 bool PointCloudRegistration::hasConverged()

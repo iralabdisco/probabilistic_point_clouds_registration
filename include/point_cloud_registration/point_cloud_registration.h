@@ -1,7 +1,7 @@
 #ifndef POINT_CLOUD_REGISTRATION_POINT_CLOUD_REGISTRATION_H
 #define POINT_CLOUD_REGISTRATION_POINT_CLOUD_REGISTRATION_H
 
-#include <fstream>
+#include <sstream>
 
 #include <Eigen/Core>
 #include <pcl/point_cloud.h>
@@ -36,6 +36,11 @@ public:
         return transformation_history_;
     }
 
+    inline std::string report()
+    {
+        return report_.str();
+    }
+
 private:
     PointCloudRegistrationParams parameters_;
     pcl::PointCloud<pcl::PointXYZ>::Ptr target_cloud_;
@@ -47,7 +52,7 @@ private:
     double mse_prev_it_;
     int current_iteration_;
     std::vector<Eigen::Affine3d> transformation_history_;
-    std::ofstream debug_file_;
+    std::stringstream report_;
 };
 
 }  // namespace point_cloud_registration
