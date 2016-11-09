@@ -1,4 +1,5 @@
-data = csvread('debug_file.txt',1,0);
+[FileName,PathName] = uigetfile('*.txt');
+data = csvread(fullfile(PathName, FileName),5,0);
 
 subplot(3,2,1)
 plot(data(:,1),data(:,2))
