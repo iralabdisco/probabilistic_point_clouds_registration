@@ -52,6 +52,8 @@ int main(int argc, char **argv)
                                               "If the mse drops below dist_treshold, the algorithm terminate", false, 0.01, "float", cmd);
         TCLAP::SwitchArg use_gaussian_arg("u", "use_gaussian",
                                           "Whether to use a gaussian instead the a t-distribution", cmd, false);
+        TCLAP::SwitchArg verbose_arg("v", "verbose",
+                                     "Verbosity", cmd, false);
         TCLAP::ValueArg<std::string> ground_truth_arg("g", "ground_truth",
                                                       "The path of the ground truth for the source cloud, if available", false, "ground_truth.pcd",
                                                       "string", cmd);
@@ -62,8 +64,7 @@ int main(int argc, char **argv)
         params.dof = dof_arg.getValue();
         params.radius = radius_arg.getValue();
         params.n_iter = num_iter_arg.getValue();
-        params.verbose = true;
-        params.dist_treshold = dist_tresh_arg.getValue();
+        params.verbose = verbose_arg.getValue();
         source_file_name = source_file_name_arg.getValue();
         target_file_name = target_file_name_arg.getValue();
         source_filter_size = source_filter_arg.getValue();
@@ -89,7 +90,6 @@ int main(int argc, char **argv)
     std::cout << "Radius of the neighborhood search: " << params.radius << std::endl;
     std::cout << "Max number of neighbours: " << params.max_neighbours << std::endl;
     std::cout << "Max number of iterations: " << params.n_iter << std::endl;
-    std::cout << "MSE treshold: " << params.dist_treshold << std::endl;
 
     std::cout << "Loading source point cloud from " << source_file_name << std::endl;
     pcl::PointCloud<PointType>::Ptr source_cloud =
@@ -143,6 +143,7 @@ int main(int argc, char **argv)
         registration = std::make_unique<PointCloudRegistration>(filtered_source_cloud, target_cloud,
                                                                 params);
     }
+    std::cout << "Registration\n";
     registration->align();
     auto estimated_transform = registration->transformation();
     pcl::PointCloud<PointType>::Ptr aligned_source = boost::make_shared<pcl::PointCloud<PointType>>();
@@ -168,8 +169,8 @@ int main(int argc, char **argv)
         report_file << "Target:" << target_file_name << " with filter size: " << target_filter_size <<
                     std::endl;
         report_file << "dof: " << params.dof << " | Radius: " << params.radius << " | Max_iter: " <<
-                    params.n_iter << " | Dist_tresh: " << params.dist_treshold << " | Max neigh: " <<
-                    params.max_neighbours << std::endl;
+                    params.n_iter << " | Max neigh: " << params.max_neighbours << " | Cost_drop_thresh_: " <<
+                    params.cost_drop_thresh << " | N_cost_drop_it: " << params.n_cost_drop_it << std::endl;
         report_file << registration->report();
     }
     return 0;

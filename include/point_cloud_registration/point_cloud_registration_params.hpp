@@ -8,7 +8,8 @@ struct PointCloudRegistrationParams {
     double radius = 1;
     int dimension = 3;
     int n_iter = 10;
-    double dist_treshold = 0.01;
+    double cost_drop_thresh = 0.01;
+    double n_cost_drop_it = 5;
     bool verbose = false;
     bool debug = false;
     double initial_rotation[4] = {1, 0, 0, 0};

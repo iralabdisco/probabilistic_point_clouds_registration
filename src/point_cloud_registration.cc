@@ -20,8 +20,9 @@ PointCloudRegistration::PointCloudRegistration(
     cost_drop_(0), num_unusefull_iter_(0), output_stream_(parameters.verbose)
 {
     source_cloud_ = boost::make_shared<pcl::PointCloud<pcl::PointXYZ>>(*source_cloud);
-    prev_source_cloud_ = boost::make_shared<pcl::PointCloud<pcl::PointXYZ>>(*source_cloud);
+
     if (parameters_.debug) {
+        prev_source_cloud_ = boost::make_shared<pcl::PointCloud<pcl::PointXYZ>>(*source_cloud);
         report_ <<
                 "iter, n_success_steps, initial_cost, final_cost, tx, ty, tz, roll, pitch, yaw, mse_prev_iter, mse_gtruth"
                 << std::endl;
@@ -93,10 +94,10 @@ void PointCloudRegistration::align()
             output_stream_ << "MSE w.r.t. ground truth: " << mse_ground_truth_ << "\n";
         }
 
-        mse_prev_it_ = point_cloud_registration::calculateMSE(source_cloud_, prev_source_cloud_);
-        *prev_source_cloud_ = *source_cloud_;
         cost_drop_ = (summary.initial_cost - summary.final_cost) / summary.initial_cost;
         if (parameters_.debug) {
+            mse_prev_it_ = point_cloud_registration::calculateMSE(source_cloud_, prev_source_cloud_);
+            *prev_source_cloud_ = *source_cloud_;
             auto rpy = current_trans.rotation().eulerAngles(0, 1, 2);
             report_ << current_iteration_ << ", " << summary.num_successful_steps << ", " <<
                     summary.initial_cost << ", " << summary.final_cost << ", " << current_trans.translation().x() <<
@@ -119,17 +120,11 @@ bool PointCloudRegistration::hasConverged()
                        current_iteration_ << " iter)\n";
         return true;
     }
-    if (current_iteration_ > 0) {
-        if (mse_prev_it_ <= parameters_.dist_treshold) {
-            output_stream_ << "Terminating because mse is below the treshold (mse = " << mse_prev_it_ <<
-                           "; threshold = " << parameters_.dist_treshold << ")" << "\n";
-            return true;
-        }
-    }
-    if (cost_drop_ < 0.01) {
-        if (num_unusefull_iter_ > 5) {
-            output_stream_ << "Terminating because cost drop has been under 1% for more than 5 iterations" <<
-                           "\n";
+    if (cost_drop_ < parameters_.cost_drop_thresh) {
+        if (num_unusefull_iter_ > parameters_.n_cost_drop_it) {
+            output_stream_ << "Terminating because cost drop has been under " << parameters_.cost_drop_thresh *
+                           100 <<
+                           " % for more than " << parameters_.n_cost_drop_it << " iterations\n";
             return true;
         } else {
             num_unusefull_iter_++;
