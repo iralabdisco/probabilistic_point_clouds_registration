@@ -7,6 +7,7 @@
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
 
+#include "point_cloud_registration/output_stream.hpp"
 #include "point_cloud_registration/point_cloud_registration_iteration.hpp"
 #include "point_cloud_registration/point_cloud_registration_params.hpp"
 
@@ -50,7 +51,10 @@ private:
     bool ground_truth_;
     double mse_ground_truth_;
     double mse_prev_it_;
+    double cost_drop_;
+    int num_unusefull_iter_;
     int current_iteration_;
+    OutputStream output_stream_;
     std::vector<Eigen::Affine3d> transformation_history_;
     std::stringstream report_;
 };

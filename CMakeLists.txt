@@ -30,7 +30,8 @@ add_library(${PROJECT_NAME}
   include/point_cloud_registration/point_cloud_registration_params.hpp
   include/point_cloud_registration/probabilistic_weights.hpp
   include/point_cloud_registration/error_term.hpp
-  include/point_cloud_registration/utilities.hpp)
+  include/point_cloud_registration/utilities.hpp
+  include/point_cloud_registration/output_stream.hpp)
 
 add_executable(point_cloud_registration src/point_cloud_registration_ex.cc)
 add_executable(icp_registration src/icp_registration.cc)

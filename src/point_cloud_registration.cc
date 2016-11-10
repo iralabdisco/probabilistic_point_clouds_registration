@@ -16,7 +16,8 @@ PointCloudRegistration::PointCloudRegistration(
     pcl::PointCloud<pcl::PointXYZ>::Ptr source_cloud,
     pcl::PointCloud<pcl::PointXYZ>::Ptr target_cloud,
     PointCloudRegistrationParams parameters): parameters_(parameters),
-    target_cloud_(target_cloud), current_iteration_(0), mse_ground_truth_(0), mse_prev_it_(0)
+    target_cloud_(target_cloud), current_iteration_(0), mse_ground_truth_(0), mse_prev_it_(0),
+    cost_drop_(0), num_unusefull_iter_(0), output_stream_(parameters.verbose)
 {
     source_cloud_ = boost::make_shared<pcl::PointCloud<pcl::PointXYZ>>(*source_cloud);
     prev_source_cloud_ = boost::make_shared<pcl::PointCloud<pcl::PointXYZ>>(*source_cloud);
@@ -37,7 +38,7 @@ PointCloudRegistration::PointCloudRegistration(
     ground_truth_cloud_ = boost::make_shared<pcl::PointCloud<pcl::PointXYZ>>(*ground_truth_cloud);
     ground_truth_ = true;
     mse_ground_truth_ = point_cloud_registration::calculateMSE(source_cloud_, ground_truth_cloud_);
-    std::cout << "Initial MSE w.r.t. ground truth: " << mse_ground_truth_ << std::endl;
+    output_stream_ << "Initial MSE w.r.t. ground truth: " << mse_ground_truth_ << "\n";
 }
 
 void PointCloudRegistration::align()
@@ -83,19 +84,18 @@ void PointCloudRegistration::align()
             current_trans = registration.transformation();
         }
         transformation_history_.push_back(current_trans);
-        if (parameters_.verbose) {
-            std::cout << summary.FullReport() << std::endl;
-        }
+        output_stream_ << summary.FullReport() << "\n";
+
         pcl::transformPointCloud (*source_cloud_, *source_cloud_, registration.transformation());
 
         if (ground_truth_) {
             mse_ground_truth_ = point_cloud_registration::calculateMSE(source_cloud_, ground_truth_cloud_);
-            std::cout << "MSE w.r.t. ground truth: " << mse_ground_truth_ << std::endl;
+            output_stream_ << "MSE w.r.t. ground truth: " << mse_ground_truth_ << "\n";
         }
 
         mse_prev_it_ = point_cloud_registration::calculateMSE(source_cloud_, prev_source_cloud_);
         *prev_source_cloud_ = *source_cloud_;
-
+        cost_drop_ = (summary.initial_cost - summary.final_cost) / summary.initial_cost;
         if (parameters_.debug) {
             auto rpy = current_trans.rotation().eulerAngles(0, 1, 2);
             report_ << current_iteration_ << ", " << summary.num_successful_steps << ", " <<
@@ -106,23 +106,36 @@ void PointCloudRegistration::align()
         }
         current_iteration_++;
     }
+    if (ground_truth_) {
+        mse_ground_truth_ = point_cloud_registration::calculateMSE(source_cloud_, ground_truth_cloud_);
+        std::cout << "MSE w.r.t. ground truth: " << mse_ground_truth_ << std::endl;
+    }
 }
 
 bool PointCloudRegistration::hasConverged()
 {
     if (current_iteration_ == parameters_.n_iter) {
-        if (parameters_.verbose) {
-            std::cout << "Terminating because maximum number of iterations has been reached (" <<
-                      current_iteration_ << " iter)" << std::endl;
-        }
+        output_stream_ << "Terminating because maximum number of iterations has been reached ( " <<
+                       current_iteration_ << " iter)\n";
         return true;
     }
     if (current_iteration_ > 0) {
         if (mse_prev_it_ <= parameters_.dist_treshold) {
-            std::cout << "Terminating because mse is below the treshold (mse = " << mse_prev_it_ <<
-                      "; threshold = " << parameters_.dist_treshold << ")" << std::endl;
+            output_stream_ << "Terminating because mse is below the treshold (mse = " << mse_prev_it_ <<
+                           "; threshold = " << parameters_.dist_treshold << ")" << "\n";
             return true;
         }
+    }
+    if (cost_drop_ < 0.01) {
+        if (num_unusefull_iter_ > 5) {
+            output_stream_ << "Terminating because cost drop has been under 1% for more than 5 iterations" <<
+                           "\n";
+            return true;
+        } else {
+            num_unusefull_iter_++;
+        }
+    } else {
+        num_unusefull_iter_ = 0;
     }
     return false;
 }
