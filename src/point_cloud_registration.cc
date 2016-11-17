@@ -21,7 +21,7 @@ PointCloudRegistration::PointCloudRegistration(
 {
     source_cloud_ = boost::make_shared<pcl::PointCloud<pcl::PointXYZ>>(*source_cloud);
 
-    if (parameters_.debug) {
+    if (parameters_.summary) {
         prev_source_cloud_ = boost::make_shared<pcl::PointCloud<pcl::PointXYZ>>(*source_cloud);
         report_ <<
                 "iter, n_success_steps, initial_cost, final_cost, tx, ty, tz, roll, pitch, yaw, mse_prev_iter, mse_gtruth"
@@ -95,7 +95,7 @@ void PointCloudRegistration::align()
         }
 
         cost_drop_ = (summary.initial_cost - summary.final_cost) / summary.initial_cost;
-        if (parameters_.debug) {
+        if (parameters_.summary) {
             mse_prev_it_ = point_cloud_registration::calculateMSE(source_cloud_, prev_source_cloud_);
             *prev_source_cloud_ = *source_cloud_;
             auto rpy = current_trans.rotation().eulerAngles(0, 1, 2);

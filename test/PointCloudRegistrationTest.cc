@@ -47,7 +47,6 @@ TEST(PointCloudRegistrationTestSuite, exactDataAssociationGaussianTest)
     PointCloudRegistrationParams params;
     params.dof = std::numeric_limits<double>::infinity();
     params.max_neighbours = 3;
-    params.dimension = 3;
     PointCloudRegistrationIteration registration(source_cloud, target_cloud, data_association, params);
     ceres::Solver::Options options;
     options.linear_solver_type = ceres::SPARSE_NORMAL_CHOLESKY;
@@ -92,7 +91,6 @@ TEST(PointCloudRegistrationTestSuite, exactDataAssociationTDistributionTest)
     PointCloudRegistrationParams params;
     params.dof = 5;
     params.max_neighbours = 3;
-    params.dimension = 3;
     PointCloudRegistrationIteration registration(source_cloud, target_cloud, data_association, params);
     ceres::Solver::Options options;
     options.linear_solver_type = ceres::SPARSE_NORMAL_CHOLESKY;

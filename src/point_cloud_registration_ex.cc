@@ -28,7 +28,6 @@ int main(int argc, char **argv)
     std::string target_file_name;
     std::string ground_truth_file_name;
     PointCloudRegistrationParams params;
-    params.dimension = 3;
 
     try {
         TCLAP::CmdLine cmd("Probabilistic point cloud registration", ' ', "1.0");
@@ -40,7 +39,7 @@ int main(int argc, char **argv)
                                                  "The leaf size of the voxel filter of the source cloud", false, 0, "float", cmd);
         TCLAP::ValueArg<float> target_filter_arg("t", "target_filter_size",
                                                  "The leaf size of the voxel filter of the target cloud", false, 0, "float", cmd);
-        TCLAP::ValueArg<int> max_neighbours_arg("n", "max_neighbours",
+        TCLAP::ValueArg<int> max_neighbours_arg("m", "max_neighbours",
                                                 "The max cardinality of the neighbours' set", false, 10, "int", cmd);
         TCLAP::ValueArg<int> num_iter_arg("i", "num_iter",
                                           "The maximum number of iterations to perform", false, 10, "int", cmd);
@@ -48,8 +47,12 @@ int main(int argc, char **argv)
                                        "float", cmd);
         TCLAP::ValueArg<float> radius_arg("r", "radius", "The radius of the neighborhood search", false, 3,
                                           "float", cmd);
-        TCLAP::ValueArg<float> dist_tresh_arg("x", "dist_treshold",
-                                              "If the mse drops below dist_treshold, the algorithm terminate", false, 0.01, "float", cmd);
+        TCLAP::ValueArg<float> cost_drop_tresh_arg("c", "cost_drop_treshold",
+                                                   "If the cost_drop drops below this threshold for too many iterations, the algorithm terminate",
+                                                   false, 0.01, "float", cmd);
+        TCLAP::ValueArg<int> num_drop_iter_arg("n", "num_drop_iter",
+                                               "The maximum number of iterations during which the cost drop is allowed to be under cost_drop_thresh",
+                                               false, 5, "int", cmd);
         TCLAP::SwitchArg use_gaussian_arg("u", "use_gaussian",
                                           "Whether to use a gaussian instead the a t-distribution", cmd, false);
         TCLAP::SwitchArg verbose_arg("v", "verbose",
@@ -57,6 +60,8 @@ int main(int argc, char **argv)
         TCLAP::ValueArg<std::string> ground_truth_arg("g", "ground_truth",
                                                       "The path of the ground truth for the source cloud, if available", false, "ground_truth.pcd",
                                                       "string", cmd);
+        TCLAP::SwitchArg dump_arg("", "dump",
+                                  "Dump registration data to file", cmd, false);
         cmd.parse(argc, argv);
 
         params.max_neighbours = max_neighbours_arg.getValue();
@@ -65,6 +70,9 @@ int main(int argc, char **argv)
         params.radius = radius_arg.getValue();
         params.n_iter = num_iter_arg.getValue();
         params.verbose = verbose_arg.getValue();
+        params.cost_drop_thresh = cost_drop_tresh_arg.getValue();
+        params.n_cost_drop_it = num_drop_iter_arg.getValue();
+        params.summary = dump_arg.getValue();
         source_file_name = source_file_name_arg.getValue();
         target_file_name = target_file_name_arg.getValue();
         source_filter_size = source_filter_arg.getValue();
@@ -90,7 +98,8 @@ int main(int argc, char **argv)
     std::cout << "Radius of the neighborhood search: " << params.radius << std::endl;
     std::cout << "Max number of neighbours: " << params.max_neighbours << std::endl;
     std::cout << "Max number of iterations: " << params.n_iter << std::endl;
-
+    std::cout << "Cost drop threshold: " << params.cost_drop_thresh << std::endl;
+    std::cout << "Num cost drop iter: " << params.n_cost_drop_it << std::endl;
     std::cout << "Loading source point cloud from " << source_file_name << std::endl;
     pcl::PointCloud<PointType>::Ptr source_cloud =
         boost::make_shared<pcl::PointCloud<PointType>>();
@@ -134,7 +143,6 @@ int main(int argc, char **argv)
         filter.setLeafSize(target_filter_size, target_filter_size, target_filter_size);
         filter.filter(*target_cloud);
     }
-    params.debug = true;
     std::unique_ptr<PointCloudRegistration> registration;
     if (ground_truth) {
         registration = std::make_unique<PointCloudRegistration>(filtered_source_cloud, target_cloud, params,
@@ -159,7 +167,7 @@ int main(int argc, char **argv)
     std::string aligned_source_name = "aligned_" + source_file_name;
     std::cout << "Saving aligned source cloud to: " << aligned_source_name.c_str() << std::endl;
     pcl::io::savePCDFile(aligned_source_name, *aligned_source);
-    if (params.debug) {
+    if (params.summary) {
         std::string report_file_name = source_file_name + "_" + target_file_name + "_summary.txt";
         std::cout << "Saving registration report to: " << report_file_name << std::endl;
         std::ofstream report_file;

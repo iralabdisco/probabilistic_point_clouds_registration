@@ -6,12 +6,11 @@ struct PointCloudRegistrationParams {
     int max_neighbours;
     double dof = 5;
     double radius = 1;
-    int dimension = 3;
     int n_iter = 10;
     double cost_drop_thresh = 0.01;
     double n_cost_drop_it = 5;
     bool verbose = false;
-    bool debug = false;
+    bool summary = false;
     double initial_rotation[4] = {1, 0, 0, 0};
     double initial_translation[3] = {0, 0, 0};
 };

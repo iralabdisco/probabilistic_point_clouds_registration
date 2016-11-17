@@ -14,6 +14,8 @@
 #include "point_cloud_registration/weight_updater_callback.hpp"
 #include "point_cloud_registration/point_cloud_registration_params.hpp"
 
+#define DIMENSIONS 3
+
 namespace point_cloud_registration {
 
 class PointCloudRegistrationIteration
@@ -24,7 +26,7 @@ public:
                                     const Eigen::SparseMatrix<int, Eigen::RowMajor> &data_association,
                                     PointCloudRegistrationParams parameters)
         : error_terms_(), data_association_(data_association), parameters_(parameters),
-          weight_updater_(parameters.dof, parameters.dimension, parameters.max_neighbours)
+          weight_updater_(parameters.dof, DIMENSIONS, parameters.max_neighbours)
     {
         std::copy(std::begin(parameters_.initial_rotation), std::end(parameters_.initial_rotation),
                   std::begin(rotation_));
