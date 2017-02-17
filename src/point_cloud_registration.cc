@@ -48,23 +48,36 @@ void PointCloudRegistration::align()
         pcl::KdTreeFLANN<pcl::PointXYZ> kdtree;
         kdtree.setInputCloud(target_cloud_);
         std::vector<float> distances;
-        Eigen::SparseMatrix<int, Eigen::RowMajor> data_association(source_cloud_->size(),
-                                                                   target_cloud_->size());
-        std::vector<Eigen::Triplet<int>> tripletList;
+        Eigen::SparseMatrix<double, Eigen::RowMajor> data_association(source_cloud_->size(),
+                                                                      target_cloud_->size());
+        std::vector<Eigen::Triplet<double>> tripletList;
+        double median_distance = 0;
         for (std::size_t i = 0; i < source_cloud_->size(); i++) {
             std::vector<int> neighbours;
             kdtree.radiusSearch(*source_cloud_, i, parameters_.radius, neighbours, distances,
                                 parameters_.max_neighbours);
+            int k = 0;
             for (int j : neighbours) {
-                tripletList.push_back(Eigen::Triplet<int>(i, j, 1));
+                tripletList.push_back(Eigen::Triplet<double>(i, j, distances[k]));
+                k++;
             }
+        }
+        std::sort(tripletList.begin(), tripletList.end(), [] (Eigen::Triplet<double> x,
+        Eigen::Triplet<double> y) {
+            return x.value() < y.value();
+        });
+        if (tripletList.size() % 2 != 0) {
+            median_distance = tripletList[(tripletList.size() + 1) / 2].value();
+        } else {
+            median_distance = (tripletList[tripletList.size() / 2].value() + tripletList[(tripletList.size() /
+                                                                                          2) + 1].value()) / 2.0;
         }
         data_association.setFromTriplets(tripletList.begin(), tripletList.end());
         data_association.makeCompressed();
 
         PointCloudRegistrationIteration registration(*source_cloud_, *target_cloud_,
                                                      data_association,
-                                                     parameters_);
+                                                     parameters_, median_distance * 3);
         ceres::Solver::Options options;
         options.linear_solver_type = ceres::DENSE_QR;
         options.use_nonmonotonic_steps = true;

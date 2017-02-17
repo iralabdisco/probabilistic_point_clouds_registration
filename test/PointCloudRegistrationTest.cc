@@ -36,11 +36,11 @@ TEST(PointCloudRegistrationTestSuite, exactDataAssociationGaussianTest)
     transform.translation() << 2.5, 0.0, 0.0;
     transform.prerotate (Eigen::AngleAxisd (0.34, Eigen::Vector3d::UnitZ()));
     pcl::transformPointCloud(source_cloud, target_cloud, transform);
-    Eigen::SparseMatrix<int, Eigen::RowMajor> data_association(source_cloud.size(),
-                                                               target_cloud.size());
-    std::vector<Eigen::Triplet<int>> tripletList;
+    Eigen::SparseMatrix<double, Eigen::RowMajor> data_association(source_cloud.size(),
+                                                                  target_cloud.size());
+    std::vector<Eigen::Triplet<double>> tripletList;
     for (std::size_t i = 0; i < source_cloud.size(); ++i) {
-        tripletList.push_back(Eigen::Triplet<int>(i, i, 1));
+        tripletList.push_back(Eigen::Triplet<double>(i, i, 1));
     }
     data_association.setFromTriplets(tripletList.begin(), tripletList.end());
     data_association.makeCompressed();
@@ -80,11 +80,11 @@ TEST(PointCloudRegistrationTestSuite, exactDataAssociationTDistributionTest)
     transform.translation() << 2.5, 0.0, 0.0;
     transform.prerotate (Eigen::AngleAxisd (0.34, Eigen::Vector3d::UnitZ()));
     pcl::transformPointCloud(source_cloud, target_cloud, transform);
-    Eigen::SparseMatrix<int, Eigen::RowMajor> data_association(source_cloud.size(),
-                                                               target_cloud.size());
-    std::vector<Eigen::Triplet<int>> tripletList;
+    Eigen::SparseMatrix<double, Eigen::RowMajor> data_association(source_cloud.size(),
+                                                                  target_cloud.size());
+    std::vector<Eigen::Triplet<double>> tripletList;
     for (std::size_t i = 0; i < source_cloud.size(); ++i) {
-        tripletList.push_back(Eigen::Triplet<int>(i, i, 1));
+        tripletList.push_back(Eigen::Triplet<double>(i, i, 1));
     }
     data_association.setFromTriplets(tripletList.begin(), tripletList.end());
     data_association.makeCompressed();
@@ -124,8 +124,8 @@ TEST(PointCloudRegistrationTestSuite, exactDataAssociationTDistributionTest)
 ////    transform.translation() << 1, 0.0, 0.0;
 //    transform.prerotate (Eigen::AngleAxisd (0.10, Eigen::Vector3d::UnitZ()));
 //    pcl::transformPointCloud(source_cloud, *target_cloud, transform);
-//    Eigen::SparseMatrix<int, Eigen::RowMajor> data_association(source_cloud.size(), target_cloud->size());
-//    std::vector<Eigen::Triplet<int>> tripletList;
+//    Eigen::SparseMatrix<double, Eigen::RowMajor> data_association(source_cloud.size(), target_cloud->size());
+//    std::vector<Eigen::Triplet<double>> tripletList;
 //    pcl::KdTreeFLANN<pcl::PointXYZ> kdtree;
 //    kdtree.setInputCloud(target_cloud);
 //    std::vector<float> distances;
@@ -135,7 +135,7 @@ TEST(PointCloudRegistrationTestSuite, exactDataAssociationTDistributionTest)
 //        kdtree.radiusSearch(source_cloud, i, 3, result, distances, 5);
 //        for (int index : result)
 //        {
-//            tripletList.push_back(Eigen::Triplet<int>(i, index, 1));
+//            tripletList.push_back(Eigen::Triplet<double>(i, index, 1));
 //        }
 //    }
 //    data_association.setFromTriplets(tripletList.begin(), tripletList.end());

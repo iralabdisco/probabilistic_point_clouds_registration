@@ -16,7 +16,7 @@ class WeightUpdaterCallback : public ceres::IterationCallback
 {
 
 private:
-    Eigen::SparseMatrix<int, Eigen::RowMajor> *data_association_;
+    Eigen::SparseMatrix<double, Eigen::RowMajor> *data_association_;
     PointCloudRegistrationParams *params_;
     std::vector<ErrorTerm *> *error_terms_;
     ProbabilisticWeights *weight_updater_;
@@ -24,7 +24,7 @@ private:
     double *translation_;
 
 public:
-    WeightUpdaterCallback(Eigen::SparseMatrix<int, Eigen::RowMajor> *data_association,
+    WeightUpdaterCallback(Eigen::SparseMatrix<double, Eigen::RowMajor> *data_association,
                           PointCloudRegistrationParams *params,
                           std::vector<ErrorTerm *> *error_terms, ProbabilisticWeights *weight_updater, double rotation[4],
                           double translation[3]):
