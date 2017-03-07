@@ -16,11 +16,29 @@ PointCloudRegistration::PointCloudRegistration(
     pcl::PointCloud<pcl::PointXYZ>::Ptr source_cloud,
     pcl::PointCloud<pcl::PointXYZ>::Ptr target_cloud,
     PointCloudRegistrationParams parameters): parameters_(parameters),
-    target_cloud_(target_cloud), current_iteration_(0), mse_ground_truth_(0), mse_prev_it_(0),
+    target_cloud_(target_cloud), mse_ground_truth_(0), current_iteration_(0), mse_prev_it_(0),
     cost_drop_(0), num_unusefull_iter_(0), output_stream_(parameters.verbose)
 {
     source_cloud_ = boost::make_shared<pcl::PointCloud<pcl::PointXYZ>>(*source_cloud);
-
+    filtered_source_cloud_ = boost::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
+    if (parameters_.source_filter_size > 0) {
+        output_stream_ << "Filtering source point cloud with leaf of size " <<
+                       parameters_.source_filter_size << "\n";
+        filter_.setInputCloud(source_cloud_);
+        filter_.setLeafSize(parameters_.source_filter_size, parameters_.source_filter_size,
+                            parameters_.source_filter_size);
+        filter_.filter(*filtered_source_cloud_);
+    } else {
+        *filtered_source_cloud_ = *source_cloud_;
+    }
+    if (parameters_.target_filter_size > 0) {
+        output_stream_ << "Filtering target point cloud with leaf of size " <<
+                       parameters_.target_filter_size << "\n";
+        filter_.setInputCloud(target_cloud_);
+        filter_.setLeafSize(parameters_.target_filter_size, parameters_.target_filter_size,
+                            parameters_.target_filter_size);
+        filter_.filter(*target_cloud_);
+    }
     if (parameters_.summary) {
         prev_source_cloud_ = boost::make_shared<pcl::PointCloud<pcl::PointXYZ>>(*source_cloud);
         report_ <<
@@ -44,17 +62,19 @@ PointCloudRegistration::PointCloudRegistration(
 
 void PointCloudRegistration::align()
 {
-    while (!hasConverged()) {
+    bool converged = false;
+    while (!converged) {
         pcl::KdTreeFLANN<pcl::PointXYZ> kdtree;
         kdtree.setInputCloud(target_cloud_);
         std::vector<float> distances;
-        Eigen::SparseMatrix<double, Eigen::RowMajor> data_association(source_cloud_->size(),
+        Eigen::SparseMatrix<double, Eigen::RowMajor> data_association(filtered_source_cloud_->size(),
                                                                       target_cloud_->size());
         std::vector<Eigen::Triplet<double>> tripletList;
+        std::vector<Eigen::Triplet<double>> tripletList_filtered;
         double median_distance = 0;
-        for (std::size_t i = 0; i < source_cloud_->size(); i++) {
+        for (std::size_t i = 0; i < filtered_source_cloud_->size(); i++) {
             std::vector<int> neighbours;
-            kdtree.radiusSearch(*source_cloud_, i, parameters_.radius, neighbours, distances,
+            kdtree.radiusSearch(*filtered_source_cloud_, i, parameters_.radius, neighbours, distances,
                                 parameters_.max_neighbours);
             int k = 0;
             for (int j : neighbours) {
@@ -72,12 +92,18 @@ void PointCloudRegistration::align()
             median_distance = (tripletList[tripletList.size() / 2].value() + tripletList[(tripletList.size() /
                                                                                           2) + 1].value()) / 2.0;
         }
+        tripletList_filtered.reserve(tripletList.size());
+        for (auto it = tripletList.begin(); it != tripletList.end(); ++it) {
+            if (it->value() < (median_distance * 3)) {
+                tripletList_filtered.push_back(*it);
+            }
+        }
         data_association.setFromTriplets(tripletList.begin(), tripletList.end());
         data_association.makeCompressed();
 
-        PointCloudRegistrationIteration registration(*source_cloud_, *target_cloud_,
+        PointCloudRegistrationIteration registration(*filtered_source_cloud_, *target_cloud_,
                                                      data_association,
-                                                     parameters_, median_distance * 3);
+                                                     parameters_);
         ceres::Solver::Options options;
         options.linear_solver_type = ceres::DENSE_QR;
         options.use_nonmonotonic_steps = true;
@@ -101,6 +127,8 @@ void PointCloudRegistration::align()
         output_stream_ << summary.FullReport() << "\n";
 
         pcl::transformPointCloud (*source_cloud_, *source_cloud_, registration.transformation());
+//        pcl::transformPointCloud (*filtered_source_cloud_, *filtered_source_cloud_,
+//                                  registration.transformation());
 
         if (ground_truth_) {
             mse_ground_truth_ = point_cloud_registration::calculateMSE(source_cloud_, ground_truth_cloud_);
@@ -119,6 +147,23 @@ void PointCloudRegistration::align()
                                                                                                            0)) << ", " << mse_prev_it_ << ", " << mse_ground_truth_ << std::endl;
         }
         current_iteration_++;
+        if (hasConverged()) {
+//            parameters_.source_filter_size = parameters_.source_filter_size / 2.0;
+//            parameters_.target_filter_size = parameters_.target_filter_size / 2.0;
+            converged = true;
+        }
+//        if (parameters_.source_filter_size < 0.0005 || parameters_.target_filter_size < 0.0005) {
+//            converged = true;
+//        } else {
+//            filter_.setInputCloud(source_cloud_);
+//            filter_.setLeafSize(parameters_.source_filter_size, parameters_.source_filter_size,
+//                                parameters_.source_filter_size);
+//            filter_.filter(*filtered_source_cloud_);
+//            filter_.setInputCloud(target_cloud_);
+//            filter_.setLeafSize(parameters_.target_filter_size, parameters_.target_filter_size,
+//                                parameters_.target_filter_size);
+//            filter_.filter(*target_cloud_);
+//        }
     }
     if (ground_truth_) {
         mse_ground_truth_ = point_cloud_registration::calculateMSE(source_cloud_, ground_truth_cloud_);

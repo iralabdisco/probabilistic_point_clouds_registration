@@ -7,8 +7,6 @@
 
 #include <Eigen/Sparse>
 #include <pcl/common/transforms.h>
-#include <pcl/filters/filter.h>
-#include <pcl/filters/voxel_grid.h>
 #include <pcl/io/pcd_io.h>
 #include <pcl/point_types.h>
 #include <tclap/CmdLine.h>
@@ -75,8 +73,8 @@ int main(int argc, char **argv)
         params.summary = dump_arg.getValue();
         source_file_name = source_file_name_arg.getValue();
         target_file_name = target_file_name_arg.getValue();
-        source_filter_size = source_filter_arg.getValue();
-        target_filter_size = target_filter_arg.getValue();
+        params.source_filter_size = source_filter_arg.getValue();
+        params.target_filter_size = target_filter_arg.getValue();
 
         if (ground_truth_arg.isSet()) {
             ground_truth = true;
@@ -126,29 +124,12 @@ int main(int argc, char **argv)
         }
     }
 
-    pcl::VoxelGrid<PointType> filter;
-    pcl::PointCloud<PointType>::Ptr filtered_source_cloud =
-        boost::make_shared<pcl::PointCloud<PointType>>();
-    if (source_filter_size > 0) {
-        std::cout << "Filtering source point cloud with leaf of size " << source_filter_size << std::endl;
-        filter.setInputCloud(source_cloud);
-        filter.setLeafSize(source_filter_size, source_filter_size, source_filter_size);
-        filter.filter(*filtered_source_cloud);
-    } else {
-        *filtered_source_cloud = *source_cloud;
-    }
-    if (target_filter_size > 0) {
-        std::cout << "Filtering target point cloud with leaf of size " << target_filter_size << std::endl;
-        filter.setInputCloud(target_cloud);
-        filter.setLeafSize(target_filter_size, target_filter_size, target_filter_size);
-        filter.filter(*target_cloud);
-    }
     std::unique_ptr<PointCloudRegistration> registration;
     if (ground_truth) {
-        registration = std::make_unique<PointCloudRegistration>(filtered_source_cloud, target_cloud, params,
+        registration = std::make_unique<PointCloudRegistration>(source_cloud, target_cloud, params,
                                                                 source_ground_truth);
     } else {
-        registration = std::make_unique<PointCloudRegistration>(filtered_source_cloud, target_cloud,
+        registration = std::make_unique<PointCloudRegistration>(source_cloud, target_cloud,
                                                                 params);
     }
     std::cout << "Registration\n";

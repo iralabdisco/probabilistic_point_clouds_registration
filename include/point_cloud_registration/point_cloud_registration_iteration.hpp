@@ -24,7 +24,7 @@ public:
     PointCloudRegistrationIteration(const pcl::PointCloud<pcl::PointXYZ> &source_cloud,
                                     const pcl::PointCloud<pcl::PointXYZ> &target_cloud,
                                     const Eigen::SparseMatrix<double, Eigen::RowMajor> &data_association,
-                                    PointCloudRegistrationParams parameters, double distance_threshold = 0)
+                                    PointCloudRegistrationParams parameters)
         : error_terms_(), data_association_(data_association), parameters_(parameters),
           weight_updater_(parameters.dof, DIMENSIONS, parameters.max_neighbours)
     {
@@ -37,13 +37,11 @@ public:
         for (size_t i = 0; i < data_association.outerSize(); i++) {
             for (Eigen::SparseMatrix<double, Eigen::RowMajor>::InnerIterator it(data_association, i); it;
                     ++it) {
-                if ((distance_threshold > 0) && (it.value() < distance_threshold)) {
-                    ErrorTerm *error_term = new ErrorTerm(source_cloud[it.row()], target_cloud[it.col()]);
-                    error_terms_.push_back(error_term);
-                    problem_->AddResidualBlock(new ceres::AutoDiffCostFunction
-                                               < ErrorTerm, ErrorTerm::kResiduals, 4, 3 > (error_term), error_term->weight(), rotation_,
-                                               translation_);
-                }
+                ErrorTerm *error_term = new ErrorTerm(source_cloud[it.row()], target_cloud[it.col()]);
+                error_terms_.push_back(error_term);
+                problem_->AddResidualBlock(new ceres::AutoDiffCostFunction
+                                           < ErrorTerm, ErrorTerm::kResiduals, 4, 3 > (error_term), error_term->weight(), rotation_,
+                                           translation_);
             }
         }
         weight_updater_callback_.reset(new WeightUpdaterCallback(&data_association_, &parameters_,

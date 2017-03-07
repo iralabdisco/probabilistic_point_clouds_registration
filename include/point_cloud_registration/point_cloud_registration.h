@@ -4,6 +4,8 @@
 #include <sstream>
 
 #include <Eigen/Core>
+#include <pcl/filters/filter.h>
+#include <pcl/filters/voxel_grid.h>
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
 
@@ -46,6 +48,7 @@ private:
     PointCloudRegistrationParams parameters_;
     pcl::PointCloud<pcl::PointXYZ>::Ptr target_cloud_;
     pcl::PointCloud<pcl::PointXYZ>::Ptr source_cloud_;
+    pcl::PointCloud<pcl::PointXYZ>::Ptr filtered_source_cloud_;
     pcl::PointCloud<pcl::PointXYZ>::Ptr prev_source_cloud_;
     pcl::PointCloud<pcl::PointXYZ>::Ptr ground_truth_cloud_;
     bool ground_truth_;
@@ -57,6 +60,7 @@ private:
     OutputStream output_stream_;
     std::vector<Eigen::Affine3d> transformation_history_;
     std::stringstream report_;
+    pcl::VoxelGrid<pcl::PointXYZ> filter_;
 };
 
 }  // namespace point_cloud_registration

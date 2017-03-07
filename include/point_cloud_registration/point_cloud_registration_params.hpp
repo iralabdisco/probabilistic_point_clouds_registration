@@ -13,6 +13,8 @@ struct PointCloudRegistrationParams {
     bool summary = false;
     double initial_rotation[4] = {1, 0, 0, 0};
     double initial_translation[3] = {0, 0, 0};
+    double source_filter_size = 0;
+    double target_filter_size = 0;
 };
 }
 
