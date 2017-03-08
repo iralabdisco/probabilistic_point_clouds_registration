@@ -10,8 +10,8 @@ namespace point_cloud_registration {
 
 using pcl::euclideanDistance;
 
-double calculateMSE(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud1,
-                    pcl::PointCloud<pcl::PointXYZ>::Ptr cloud2)
+inline double calculateMSE(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud1,
+                           pcl::PointCloud<pcl::PointXYZ>::Ptr cloud2)
 {
     assert(cloud1->size() == cloud2->size());
     double mse = 0;
