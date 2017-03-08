@@ -63,7 +63,7 @@ PointCloudRegistration::PointCloudRegistration(
 void PointCloudRegistration::align()
 {
     bool converged = false;
-    while (!converged) {
+    while (!hasConverged()) {
         pcl::KdTreeFLANN<pcl::PointXYZ> kdtree;
         kdtree.setInputCloud(target_cloud_);
         std::vector<float> distances;
@@ -127,8 +127,8 @@ void PointCloudRegistration::align()
         output_stream_ << summary.FullReport() << "\n";
 
         pcl::transformPointCloud (*source_cloud_, *source_cloud_, registration.transformation());
-//        pcl::transformPointCloud (*filtered_source_cloud_, *filtered_source_cloud_,
-//                                  registration.transformation());
+        pcl::transformPointCloud (*filtered_source_cloud_, *filtered_source_cloud_,
+                                  registration.transformation());
 
         if (ground_truth_) {
             mse_ground_truth_ = point_cloud_registration::calculateMSE(source_cloud_, ground_truth_cloud_);
@@ -147,23 +147,6 @@ void PointCloudRegistration::align()
                                                                                                            0)) << ", " << mse_prev_it_ << ", " << mse_ground_truth_ << std::endl;
         }
         current_iteration_++;
-        if (hasConverged()) {
-//            parameters_.source_filter_size = parameters_.source_filter_size / 2.0;
-//            parameters_.target_filter_size = parameters_.target_filter_size / 2.0;
-            converged = true;
-        }
-//        if (parameters_.source_filter_size < 0.0005 || parameters_.target_filter_size < 0.0005) {
-//            converged = true;
-//        } else {
-//            filter_.setInputCloud(source_cloud_);
-//            filter_.setLeafSize(parameters_.source_filter_size, parameters_.source_filter_size,
-//                                parameters_.source_filter_size);
-//            filter_.filter(*filtered_source_cloud_);
-//            filter_.setInputCloud(target_cloud_);
-//            filter_.setLeafSize(parameters_.target_filter_size, parameters_.target_filter_size,
-//                                parameters_.target_filter_size);
-//            filter_.filter(*target_cloud_);
-//        }
     }
     if (ground_truth_) {
         mse_ground_truth_ = point_cloud_registration::calculateMSE(source_cloud_, ground_truth_cloud_);
