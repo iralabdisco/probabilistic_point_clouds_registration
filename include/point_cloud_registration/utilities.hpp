@@ -5,6 +5,7 @@
 #include <pcl/common/distances.h>
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
+#include <pcl/kdtree/kdtree_flann.h>
 
 namespace point_cloud_registration {
 
@@ -20,6 +21,25 @@ inline double calculateMSE(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud1,
     }
     mse /= cloud1->size();
     return mse;
+}
+
+inline double averageClosestDistance(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud1,
+                                     pcl::PointCloud<pcl::PointXYZ>::Ptr cloud2)
+{
+    double avgDistance = 0;
+    pcl::KdTreeFLANN<pcl::PointXYZ> kdtree;
+    kdtree.setInputCloud(cloud2);
+
+    for (std::size_t i = 0; i < cloud1->size(); i++) {
+        std::vector<int> neighbours;
+        std::vector<float> distances;
+        neighbours.reserve(1);
+        distances.reserve(1);
+        kdtree.nearestKSearch(*cloud1, i, 1, neighbours, distances);
+        avgDistance += distances[0];
+    }
+    avgDistance /= cloud1->size();
+    return avgDistance;
 }
 
 } // namespace point_cloud_registration
