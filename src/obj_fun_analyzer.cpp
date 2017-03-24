@@ -22,7 +22,6 @@ using point_cloud_registration::PointCloudRegistrationParams;
 
 int main(int argc, char **argv)
 {
-    float source_filter_size, target_filter_size;
     bool use_gaussian = false, ground_truth = false;
     std::string source_file_name, target_file_name;
     PointCloudRegistrationParams params;
@@ -106,16 +105,38 @@ int main(int argc, char **argv)
     std::string report_file_name = source_file_name + "_analyzer_summary.txt";
     std::ofstream report_file;
     report_file.open(report_file_name);
-    report_file << "Source: " << source_file_name << " with filter size: " << source_filter_size <<
+    report_file << "Source: " << source_file_name << " with filter size: " << params.source_filter_size
+                <<
                 std::endl;
     report_file << "dof: " << params.dof << " | Radius: " << params.radius << " | Max_iter: " <<
                 params.n_iter << " | Max neigh: " << params.max_neighbours << " | Cost_drop_thresh_: " <<
                 params.cost_drop_thresh << " | N_cost_drop_it: " << params.n_cost_drop_it << std::endl;
-    report_file << "axis = 1 0 0" << std::endl;
-    for (double angle = 0.08; angle < 3.14; angle += 0.08) {
-        //0.08 rad = 5 deg
-        Eigen::Affine3d trans(Eigen::AngleAxis<double>(angle, Eigen::Vector3d(1, 0, 0)));
+    auto axis = Eigen::Vector3d(0, 0, 1);
+//    report_file << "axis = " << axis[0] << " " << axis[1] << " " << axis[2] << std::endl;
+    report_file << "Displacement, MSE_Initial, MSE_G_Truth, Score" << std::endl;
+//    for (double angle = 0.08; angle < 3.14; angle += 0.08) {
+//        //0.08 rad = 5 deg
+
+//        Eigen::Affine3d trans(Eigen::AngleAxis<double>(angle, axis));
+//        pcl::transformPointCloud (*source_cloud, *moved_source, trans);
+//        registration = std::make_unique<PointCloudRegistration>(moved_source, target_cloud, params,
+//                                                                source_cloud);
+//        registration->align();
+//        auto estimated_transform = registration->transformation();
+//        pcl::transformPointCloud (*moved_source, *aligned_source, estimated_transform);
+//        double mse_ground_truth = point_cloud_registration::calculateMSE(aligned_source,
+//                                                                         source_cloud);
+//        double mse_initial = point_cloud_registration::calculateMSE(moved_source, source_cloud);
+//        double score = point_cloud_registration::medianClosestDistance(aligned_source, target_cloud);
+//        report_file << angle << ", " << mse_initial << ", " << mse_ground_truth << ", " << score <<
+//                    std::endl;
+//        std::cout << "Registered angle " << angle << ", MSE " << mse_ground_truth << std::endl;
+//    }
+    for (double displacement = 0.01; displacement < 10; displacement += 0.1) {
+
+        Eigen::Affine3d trans(Eigen::Translation<double, 3>(displacement, displacement, displacement));
         pcl::transformPointCloud (*source_cloud, *moved_source, trans);
+        params.radius = displacement;
         registration = std::make_unique<PointCloudRegistration>(moved_source, target_cloud, params,
                                                                 source_cloud);
         registration->align();
@@ -125,9 +146,10 @@ int main(int argc, char **argv)
                                                                          source_cloud);
         double mse_initial = point_cloud_registration::calculateMSE(moved_source, source_cloud);
         double score = point_cloud_registration::averageClosestDistance(aligned_source, target_cloud);
-        report_file << angle << ", " << mse_initial << ", " << mse_ground_truth << ", " << score <<
+        report_file << displacement << ", " << mse_initial << ", " << mse_ground_truth << ", " << score <<
                     std::endl;
-        std::cout << "Registered angle " << angle << ", MSE " << mse_ground_truth << std::endl;
+        std::cout << "Registered displacement " << displacement << ", MSE " << mse_ground_truth <<
+                  std::endl;
     }
     report_file.close();
 

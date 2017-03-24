@@ -20,7 +20,6 @@ using point_cloud_registration::PointCloudRegistrationParams;
 
 int main(int argc, char **argv)
 {
-    float source_filter_size, target_filter_size;
     bool use_gaussian = false, ground_truth = false;
     std::string source_file_name;
     std::string target_file_name;
@@ -153,9 +152,11 @@ int main(int argc, char **argv)
         std::cout << "Saving registration report to: " << report_file_name << std::endl;
         std::ofstream report_file;
         report_file.open(report_file_name);
-        report_file << "Source: " << source_file_name << " with filter size: " << source_filter_size <<
+        report_file << "Source: " << source_file_name << " with filter size: " << params.source_filter_size
+                    <<
                     std::endl;
-        report_file << "Target:" << target_file_name << " with filter size: " << target_filter_size <<
+        report_file << "Target:" << target_file_name << " with filter size: " << params.target_filter_size
+                    <<
                     std::endl;
         report_file << "dof: " << params.dof << " | Radius: " << params.radius << " | Max_iter: " <<
                     params.n_iter << " | Max neigh: " << params.max_neighbours << " | Cost_drop_thresh_: " <<
