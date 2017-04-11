@@ -65,6 +65,23 @@ inline double medianClosestDistance(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud1,
     }
     return median_distance;
 }
+
+inline double medianDistance(std::vector<Eigen::Triplet<double>> tripletList)
+{
+    double median_distance;
+    std::sort(tripletList.begin(), tripletList.end(), [] (Eigen::Triplet<double> x,
+    Eigen::Triplet<double> y) {
+        return x.value() < y.value();
+    });
+    if (tripletList.size() % 2 != 0) {
+        median_distance = tripletList[(tripletList.size() + 1) / 2].value();
+    } else {
+        median_distance = (tripletList[tripletList.size() / 2].value() + tripletList[(tripletList.size() /
+                                                                                      2) + 1].value()) / 2.0;
+    }
+    return median_distance;
+}
+
 } // namespace point_cloud_registration
 
 #endif
