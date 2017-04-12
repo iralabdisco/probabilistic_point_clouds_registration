@@ -2,6 +2,8 @@
 #define POINT_CLOUD_REGISTRATION_UTILITIES_HPP
 #include <assert.h>
 
+#include <Eigen/Core>
+
 #include <pcl/common/distances.h>
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
@@ -80,6 +82,19 @@ inline double medianDistance(std::vector<Eigen::Triplet<double>> tripletList)
                                                                                       2) + 1].value()) / 2.0;
     }
     return median_distance;
+}
+
+inline Eigen::Quaterniond
+euler2Quaternion( const double roll,
+                  const double pitch,
+                  const double yaw )
+{
+    Eigen::AngleAxisd rollAngle(roll, Eigen::Vector3d::UnitX());
+    Eigen::AngleAxisd pitchAngle(pitch, Eigen::Vector3d::UnitY());
+    Eigen::AngleAxisd yawAngle(yaw, Eigen::Vector3d::UnitZ());
+
+    Eigen::Quaterniond q = yawAngle * pitchAngle * rollAngle;
+    return q;
 }
 
 } // namespace point_cloud_registration

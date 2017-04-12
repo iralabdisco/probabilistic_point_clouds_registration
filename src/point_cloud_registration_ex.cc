@@ -5,6 +5,7 @@
 #include <string>
 #include <stdlib.h>
 
+#include <Eigen/Core>
 #include <Eigen/Sparse>
 #include <pcl/common/transforms.h>
 #include <pcl/io/pcd_io.h>
@@ -12,6 +13,8 @@
 #include <tclap/CmdLine.h>
 
 #include "point_cloud_registration/point_cloud_registration.h"
+#include "point_cloud_registration/utilities.hpp"
+
 
 typedef pcl::PointXYZ PointType;
 
@@ -25,7 +28,7 @@ int main(int argc, char **argv)
     std::string target_file_name;
     std::string ground_truth_file_name;
     PointCloudRegistrationParams params;
-
+    Eigen::Affine3d initial_guess(Eigen::Affine3d::Identity());
     try {
         TCLAP::CmdLine cmd("Probabilistic point cloud registration", ' ', "1.0");
         TCLAP::UnlabeledValueArg<std::string> source_file_name_arg("source_file_name",
@@ -44,6 +47,14 @@ int main(int argc, char **argv)
                                        "float", cmd);
         TCLAP::ValueArg<float> radius_arg("r", "radius", "The radius of the neighborhood search", false, 3,
                                           "float", cmd);
+        TCLAP::ValueArg<float> tx_arg("", "tx", "tx", false, 0, "float", cmd);
+        TCLAP::ValueArg<float> ty_arg("", "ty", "ty", false, 0, "float", cmd);
+        TCLAP::ValueArg<float> tz_arg("", "tz", "tz", false, 0, "float", cmd);
+
+        TCLAP::ValueArg<float> roll_arg("", "roll", "roll", false, 0, "float", cmd);
+        TCLAP::ValueArg<float> pitch_arg("", "pitch", "pitch", false, 0, "float", cmd);
+        TCLAP::ValueArg<float> yaw_arg("", "yaw", "yaw", false, 0, "float", cmd);
+
         TCLAP::ValueArg<float> cost_drop_tresh_arg("c", "cost_drop_treshold",
                                                    "If the cost_drop drops below this threshold for too many iterations, the algorithm terminate",
                                                    false, 0.01, "float", cmd);
@@ -75,6 +86,13 @@ int main(int argc, char **argv)
         params.source_filter_size = source_filter_arg.getValue();
         params.target_filter_size = target_filter_arg.getValue();
 
+        if (tx_arg.isSet()) {
+            initial_guess.translate(Eigen::Vector3d(tx_arg.getValue(), ty_arg.getValue(), tz_arg.getValue()));
+            initial_guess.rotate(point_cloud_registration::euler2Quaternion(roll_arg.getValue() * 0.0174533,
+                                                                            pitch_arg.getValue() * 0.0174533,
+                                                                            yaw_arg.getValue() * 0.0174533));
+        }
+
         if (ground_truth_arg.isSet()) {
             ground_truth = true;
             ground_truth_file_name = ground_truth_arg.getValue();
@@ -87,25 +105,34 @@ int main(int argc, char **argv)
 
 
     if (use_gaussian) {
-        std::cout << "Using gaussian model" << std::endl;
+        if (params.verbose) {
+            std::cout << "Using gaussian model" << std::endl;
+        }
         params.dof = std::numeric_limits<double>::infinity();
     } else {
-        std::cout << "Using a t-distribution with " << params.dof << " dof" << std::endl;
+        if (params.verbose) {
+            std::cout << "Using a t-distribution with " << params.dof << " dof" << std::endl;
+        }
     }
-    std::cout << "Radius of the neighborhood search: " << params.radius << std::endl;
-    std::cout << "Max number of neighbours: " << params.max_neighbours << std::endl;
-    std::cout << "Max number of iterations: " << params.n_iter << std::endl;
-    std::cout << "Cost drop threshold: " << params.cost_drop_thresh << std::endl;
-    std::cout << "Num cost drop iter: " << params.n_cost_drop_it << std::endl;
-    std::cout << "Loading source point cloud from " << source_file_name << std::endl;
+    if (params.verbose) {
+        std::cout << "Radius of the neighborhood search: " << params.radius << std::endl;
+        std::cout << "Max number of neighbours: " << params.max_neighbours << std::endl;
+        std::cout << "Max number of iterations: " << params.n_iter << std::endl;
+        std::cout << "Cost drop threshold: " << params.cost_drop_thresh << std::endl;
+        std::cout << "Num cost drop iter: " << params.n_cost_drop_it << std::endl;
+        std::cout << "Loading source point cloud from " << source_file_name << std::endl;
+    }
     pcl::PointCloud<PointType>::Ptr source_cloud =
         boost::make_shared<pcl::PointCloud<PointType>>();
     if (pcl::io::loadPCDFile<PointType>(source_file_name, *source_cloud) == -1) {
         std::cout << "Could not load source cloud, closing" << std::endl;
         exit(EXIT_FAILURE);
     }
+    pcl::transformPointCloud (*source_cloud, *source_cloud, initial_guess);
 
-    std::cout << "Loading target point cloud from " << target_file_name << std::endl;
+    if (params.verbose) {
+        std::cout << "Loading target point cloud from " << target_file_name << std::endl;
+    }
     pcl::PointCloud<PointType>::Ptr target_cloud =
         boost::make_shared<pcl::PointCloud<PointType>>();
     if (pcl::io::loadPCDFile<PointType>(target_file_name, *target_cloud) == -1) {
@@ -131,22 +158,25 @@ int main(int argc, char **argv)
         registration = std::make_unique<PointCloudRegistration>(source_cloud, target_cloud,
                                                                 params);
     }
-    std::cout << "Registration\n";
+    if (params.verbose) {
+        std::cout << "Registration\n";
+    }
     registration->align();
     auto estimated_transform = registration->transformation();
     pcl::PointCloud<PointType>::Ptr aligned_source = boost::make_shared<pcl::PointCloud<PointType>>();
     pcl::transformPointCloud (*source_cloud, *aligned_source, estimated_transform);
-
-    std::cout << "Transformation history:" << std::endl;
-    for (auto trans : registration->transformation_history()) {
-        Eigen::Quaterniond rotq(trans.rotation());
-        std::cout << "T: " << trans.translation().x() << ", " << trans.translation().y() << ", " <<
-                  trans.translation().z() << " ||| R: " << rotq.x() << ", " << rotq.y() << ", " << rotq.z() << ", " <<
-                  rotq.w() << std::endl;
+    if (params.verbose) {
+        std::cout << "Transformation history:" << std::endl;
+        for (auto trans : registration->transformation_history()) {
+            Eigen::Quaterniond rotq(trans.rotation());
+            std::cout << "T: " << trans.translation().x() << ", " << trans.translation().y() << ", " <<
+                      trans.translation().z() << " ||| R: " << rotq.x() << ", " << rotq.y() << ", " << rotq.z() << ", " <<
+                      rotq.w() << std::endl;
+        }
+        std::string aligned_source_name = "aligned_" + source_file_name;
+        std::cout << "Saving aligned source cloud to: " << aligned_source_name.c_str() << std::endl;
+        pcl::io::savePCDFile(aligned_source_name, *aligned_source);
     }
-    std::string aligned_source_name = "aligned_" + source_file_name;
-    std::cout << "Saving aligned source cloud to: " << aligned_source_name.c_str() << std::endl;
-    pcl::io::savePCDFile(aligned_source_name, *aligned_source);
     if (params.summary) {
         std::string report_file_name = source_file_name + "_" + target_file_name + "_summary.txt";
         std::cout << "Saving registration report to: " << report_file_name << std::endl;
@@ -163,5 +193,7 @@ int main(int argc, char **argv)
                     params.cost_drop_thresh << " | N_cost_drop_it: " << params.n_cost_drop_it << std::endl;
         report_file << registration->report();
     }
+    double score = point_cloud_registration::medianClosestDistance(aligned_source, target_cloud);
+    std::cout << score;
     return 0;
 }
