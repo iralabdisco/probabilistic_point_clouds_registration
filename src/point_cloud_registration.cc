@@ -62,7 +62,6 @@ PointCloudRegistration::PointCloudRegistration(
 
 void PointCloudRegistration::align()
 {
-    bool converged = false;
     double previous_score = 0;
     while (!hasConverged()) {
         pcl::KdTreeFLANN<pcl::PointXYZ> kdtree;
@@ -119,18 +118,6 @@ void PointCloudRegistration::align()
                     ", " << current_trans.translation().y() << ", " << current_trans.translation().z() << ", " <<
                     pcl::rad2deg(rpy(0, 0)) << ", " << pcl::rad2deg(rpy(1, 0)) << ", " << pcl::rad2deg(rpy(2,
                                                                                                            0)) << ", " << mse_prev_it_ << ", " << mse_ground_truth_ << std::endl;
-        }
-        double current_score = point_cloud_registration::medianClosestDistance(source_cloud_,
-                                                                               target_cloud_);
-        if (previous_score == 0) {
-            previous_score = current_score;
-        } else {
-            if (current_score > previous_score) {
-                parameters_.radius = parameters_.radius / 2.0;
-                pcl::transformPointCloud (*source_cloud_, *source_cloud_, registration.transformation().inverse());
-                pcl::transformPointCloud (*filtered_source_cloud_, *filtered_source_cloud_,
-                                          registration.transformation().inverse());
-            }
         }
         current_iteration_++;
     }
