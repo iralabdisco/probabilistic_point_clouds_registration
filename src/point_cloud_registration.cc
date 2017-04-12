@@ -62,7 +62,7 @@ PointCloudRegistration::PointCloudRegistration(
 
 void PointCloudRegistration::align()
 {
-    double previous_score = 0;
+    bool converged = false;
     while (!hasConverged()) {
         pcl::KdTreeFLANN<pcl::PointXYZ> kdtree;
         kdtree.setInputCloud(target_cloud_);
@@ -70,7 +70,34 @@ void PointCloudRegistration::align()
         Eigen::SparseMatrix<double, Eigen::RowMajor> data_association(filtered_source_cloud_->size(),
                                                                       target_cloud_->size());
         std::vector<Eigen::Triplet<double>> tripletList;
-
+        std::vector<Eigen::Triplet<double>> tripletList_filtered;
+        double median_distance = 0;
+        for (std::size_t i = 0; i < filtered_source_cloud_->size(); i++) {
+            std::vector<int> neighbours;
+            kdtree.radiusSearch(*filtered_source_cloud_, i, parameters_.radius, neighbours, distances,
+                                parameters_.max_neighbours);
+            int k = 0;
+            for (int j : neighbours) {
+                tripletList.push_back(Eigen::Triplet<double>(i, j, distances[k]));
+                k++;
+            }
+        }
+        std::sort(tripletList.begin(), tripletList.end(), [] (Eigen::Triplet<double> x,
+        Eigen::Triplet<double> y) {
+            return x.value() < y.value();
+        });
+        if (tripletList.size() % 2 != 0) {
+            median_distance = tripletList[(tripletList.size() + 1) / 2].value();
+        } else {
+            median_distance = (tripletList[tripletList.size() / 2].value() + tripletList[(tripletList.size() /
+                                                                                          2) + 1].value()) / 2.0;
+        }
+        tripletList_filtered.reserve(tripletList.size());
+        for (auto it = tripletList.begin(); it != tripletList.end(); ++it) {
+            if (it->value() < (median_distance * 3)) {
+                tripletList_filtered.push_back(*it);
+            }
+        }
         data_association.setFromTriplets(tripletList.begin(), tripletList.end());
         data_association.makeCompressed();
 
