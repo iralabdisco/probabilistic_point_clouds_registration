@@ -193,7 +193,7 @@ int main(int argc, char **argv)
                     params.cost_drop_thresh << " | N_cost_drop_it: " << params.n_cost_drop_it << std::endl;
         report_file << registration->report();
     }
-    double score = point_cloud_registration::medianClosestDistance(aligned_source, target_cloud);
+    double score = point_cloud_registration::averageClosestDistance(aligned_source, target_cloud);
     std::cout << score;
     return 0;
 }

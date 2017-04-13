@@ -59,16 +59,16 @@ def evaluate(individual):
 
     radius = individual[6]
 
-    score = subprocess.check_output(["../../../build-Release/point_cloud_registration","bun090_UnStructured.pcd", "bun000_UnStructured.pcd", "-m 0" ,
+    score = subprocess.check_output(["../../../build-Release/point_cloud_registration","bun090_UnStructured.pcd", "bun000_UnStructured.pcd", "-m 10" ,
     "-s 0.01", "-t 0.01",
-    "-i 1","-d 5", "-r "+str(radius), "--tx "+str(tx), "--ty "+str(ty), "--tz "+str(tz), "--roll "+str(roll), "--pitch "+str(pitch), "--yaw "+str(yaw)])
+    "-i 100","-d 5", "-r "+str(radius), "--tx "+str(tx), "--ty "+str(ty), "--tz "+str(tz), "--roll "+str(roll), "--pitch "+str(pitch), "--yaw "+str(yaw)])
     return float(score),
 #intertial 0.72, cognitive 1.49, social 1.49
 toolbox = base.Toolbox()
-pmin = [-1,-1,-1,0,0,0,0.01]
-pmax = [1,1,1,360,360,360,1]
-smin = list(pmin)
-smax = list(pmax)
+pmin = [0,0,0,0,0,0,100]
+pmax = [0,0,0,270,270,270,100]
+smin = [0, 0, 0, 15, 15, 15, 0]
+smax = [0, 0, 0, 30, 30, 30, 0]
 toolbox.register("particle", generate, pmin, pmax, smin, smax)
 toolbox.register("population", tools.initRepeat, list, toolbox.particle)
 toolbox.register("update", updateParticle, phi1=2.0, phi2=2.0)
