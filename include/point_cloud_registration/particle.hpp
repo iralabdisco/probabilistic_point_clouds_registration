@@ -18,9 +18,9 @@ class Particle
 public:
     Particle(pcl::PointCloud<pcl::PointXYZ>::Ptr source_cloud,
              pcl::PointCloud<pcl::PointXYZ>::Ptr target_cloud,
-             PointCloudRegistrationParams parameters): source_cloud_(source_cloud),
+             PointCloudRegistrationParams parameters, int id): source_cloud_(source_cloud),
         target_cloud_(target_cloud), params_(parameters), max_position_(7), min_position_(7), position_(7),
-        velocity_(7)
+        velocity_(7), id_(id), generator(rd())
     {
         initial_guess_ = boost::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
         max_position_ << 0, 0, 0, 360, 360, 360, 100;
@@ -64,6 +64,8 @@ public:
         min_position_ = other.min_position_;
         params_ = other.params_;
         setParamsFromPosition();
+        id_ = other.id_;
+        return *this;
     }
 
     void evolve()
@@ -72,18 +74,19 @@ public:
         velocity_ = velocity_ * ALPHA + random_beta(generator) * (best_position_ - position_) + random_beta(
                         generator) * (global_best_ - position_);
         position_ = position_ + velocity_;
+        setParamsFromPosition();
+        bool valid = true;
         for (int i = 0; i < position_.size(); i++) {
-            if (position_[i] > max_position_[i]) {
-                position_[i] = position_[i] - 2 * velocity_[i];
-            } else if (position_[i] < min_position_[i]) {
-                position_[i] = position_[i] + 2 * velocity_[i];
+            if (position_[i] > max_position_[i] || position_[i] < min_position_[i]) {
+                valid = false;
             }
         }
-        setParamsFromPosition();
-        score_ = registration_->align();
-        if (score_ < best_score_) {
-            best_score_ = score_;
-            best_position_ = position_;
+        if (valid) {
+            score_ = registration_->align();
+            if (score_ < best_score_) {
+                best_score_ = score_;
+                best_position_ = position_;
+            }
         }
     }
 
@@ -104,16 +107,20 @@ public:
         gbest_score_ = gbest.score_;
     }
 
-    double getScore()
+    double getScore() const
     {
         return score_;
     }
 
-    Eigen::VectorXd getPosition()
+    Eigen::VectorXd getPosition() const
     {
         return position_;
     }
 
+    int getId() const
+    {
+        return id_;
+    }
 private:
     pcl::PointCloud<pcl::PointXYZ>::Ptr source_cloud_;
     pcl::PointCloud<pcl::PointXYZ>::Ptr initial_guess_;
@@ -126,13 +133,26 @@ private:
     double best_score_;
     double gbest_score_;
     Eigen::VectorXd global_best_;
-    std::default_random_engine generator;
+    std::random_device rd;
+    std::mt19937 generator;
     Eigen::VectorXd max_position_;
     Eigen::VectorXd min_position_;
     PointCloudRegistrationParams params_;
     const double ALPHA = 0.7298;
     const double BETA = 1.4961;
+    int id_;
 };
+
+std::ostream &operator<<(std::ostream &os, Particle const &p)
+{
+    os << p.getId() << ": ";
+    for (int i = 0; i < p.getPosition().size(); i++) {
+        os << p.getPosition()[i];
+        os << " ";
+    }
+    os << " --> " << p.getScore();
+    return os;
+}
 }  // namespace point_cloud_registration
 
 #endif

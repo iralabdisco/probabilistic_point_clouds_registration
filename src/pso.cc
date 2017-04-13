@@ -27,6 +27,17 @@ using point_cloud_registration::PSORegistration;
 using point_cloud_registration::Particle;
 using point_cloud_registration::PointCloudRegistrationParams;
 
+Particle findBest(std::vector<Particle> &particles)
+{
+    std::vector<double> scores(particles.size());
+    for (int j = 0; j < particles.size(); j++) {
+        scores[j] = particles[j].getScore();
+    }
+    int best_index = std::distance(scores.begin(), std::min_element(scores.begin(), scores.end()));
+    Particle best = (particles[best_index]);
+    return best;
+}
+
 int main(int argc, char **argv)
 {
     bool use_gaussian = false;
@@ -111,41 +122,34 @@ int main(int argc, char **argv)
     std::vector<double> scores(num_part);
     Particle gbest;
     for (int i = 0; i < num_part; i++) {
-        particles.push_back(Particle(source_cloud, target_cloud, params));
+        particles.push_back(Particle(source_cloud, target_cloud, params, i));
     }
-
-    for (int j = 0; j < particles.size(); j++) {
-        scores[j] = particles[j].getScore();
-    }
-    int gen_best_index = std::distance(scores.begin(), std::min_element(scores.begin(), scores.end()));
-    Particle *gen_best = &(particles[gen_best_index]);
+    gbest = findBest(particles);
     for (auto &part : particles) {
-        part.setGlobalBest(*gen_best);
+        part.setGlobalBest(gbest);
+        std::cout << part << std::endl;
     }
+    std::cout << "................." << std::endl;
+    std::cout << "Best: " << gbest << std::endl;
+    std::cout << "---------------------" << std::endl;
 
 
     for (int i = 0; i < 1000; i++) {
         for (int j = 0; j < particles.size(); j++) {
             particles[j].evolve();
             scores[j] = particles[j].getScore();
-            std::cout << particles[i].getPosition() << " - " << particles[i].getScore() << std::endl;
+            std::cout << particles[j] << std::endl;
         }
-        std::cout << "------------------" << std::endl;
-        int gen_best_index = std::distance(scores.begin(), std::min_element(scores.begin(), scores.end()));
-        Particle *gen_best = &(particles[gen_best_index]);
-        if (i == 0) {
-            gbest = *gen_best;
-            for (auto &part : particles) {
-                part.setGlobalBest(gbest);
-            }
-        } else if (gen_best->getScore() < gbest.getScore()) {
-            gbest = *gen_best;
+        std::cout << "................." << std::endl;
+        Particle current_best = findBest(particles);
+        if (current_best.getScore() < gbest.getScore()) {
+            gbest = current_best;
             for (auto &part : particles) {
                 part.setGlobalBest(gbest);
             }
         }
-        std::cout << gbest.getPosition() << " - " << gbest.getScore() << std::endl;
-        std::cout << "............................." << std::endl;
+        std::cout << "Gen " << i << " best: " << gbest << std::endl;
+        std::cout << "---------------------" << std::endl;
 
     }
 
