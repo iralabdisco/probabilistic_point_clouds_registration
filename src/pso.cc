@@ -33,10 +33,12 @@ Particle findBest(std::vector<Particle> &particles)
     for (int j = 0; j < particles.size(); j++) {
         scores[j] = particles[j].getScore();
     }
+
     int best_index = std::distance(scores.begin(), std::min_element(scores.begin(), scores.end()));
     Particle best = (particles[best_index]);
     return best;
 }
+std::vector<double> getScores()
 
 int main(int argc, char **argv)
 {

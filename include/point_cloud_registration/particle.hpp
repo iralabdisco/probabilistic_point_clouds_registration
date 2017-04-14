@@ -23,8 +23,8 @@ public:
         velocity_(7), id_(id), generator(rd())
     {
         initial_guess_ = boost::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
-        max_position_ << 0, 0, 0, 360, 360, 360, 100;
-        min_position_ << 0, 0, 0, 0, 0, 0, 100;
+        max_position_ << 0.5, 0.5, 0.5, 360, 360, 360, 100;
+        min_position_ << -0.5, -0.5, -0.5, 0, 0, 0, 100;
         for (int i = 0; i < position_.size(); i++) {
             std::uniform_real_distribution<double> random_number(min_position_[i], max_position_[i]);
             position_[i] = random_number(generator);
@@ -65,6 +65,7 @@ public:
         params_ = other.params_;
         setParamsFromPosition();
         id_ = other.id_;
+        neighbours_ = other.neighbours_;
         return *this;
     }
 
@@ -121,6 +122,12 @@ public:
     {
         return id_;
     }
+
+    void addNeighbour(Particle *neighbour)
+    {
+        neighbours_.push_back(neighbour);
+    }
+
 private:
     pcl::PointCloud<pcl::PointXYZ>::Ptr source_cloud_;
     pcl::PointCloud<pcl::PointXYZ>::Ptr initial_guess_;
@@ -141,6 +148,7 @@ private:
     const double ALPHA = 0.7298;
     const double BETA = 1.4961;
     int id_;
+    std::vecotr<Particle *> neighbours_;
 };
 
 std::ostream &operator<<(std::ostream &os, Particle const &p)
