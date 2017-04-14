@@ -36,6 +36,8 @@ public:
         score_ = registration_->align();
         best_score_ = score_;
         best_position_ = position_;
+        global_best_ = position_;
+        gbest_score_ = score_;
     }
 
     Particle()
@@ -65,7 +67,6 @@ public:
         params_ = other.params_;
         setParamsFromPosition();
         id_ = other.id_;
-        neighbours_ = other.neighbours_;
         return *this;
     }
 
@@ -104,8 +105,10 @@ public:
 
     void setGlobalBest(Particle &gbest)
     {
-        global_best_ = gbest.position_;
-        gbest_score_ = gbest.score_;
+        if (gbest_score_ > gbest.score_) {
+            global_best_ = gbest.position_;
+            gbest_score_ = gbest.score_;
+        }
     }
 
     double getScore() const
@@ -121,11 +124,6 @@ public:
     int getId() const
     {
         return id_;
-    }
-
-    void addNeighbour(Particle *neighbour)
-    {
-        neighbours_.push_back(neighbour);
     }
 
 private:
@@ -148,7 +146,6 @@ private:
     const double ALPHA = 0.7298;
     const double BETA = 1.4961;
     int id_;
-    std::vecotr<Particle *> neighbours_;
 };
 
 std::ostream &operator<<(std::ostream &os, Particle const &p)

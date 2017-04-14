@@ -27,18 +27,46 @@ using point_cloud_registration::PSORegistration;
 using point_cloud_registration::Particle;
 using point_cloud_registration::PointCloudRegistrationParams;
 
-Particle findBest(std::vector<Particle> &particles)
+std::vector<double> getScores(std::vector<Particle> &particles)
 {
     std::vector<double> scores(particles.size());
     for (int j = 0; j < particles.size(); j++) {
         scores[j] = particles[j].getScore();
     }
+    return scores;
+}
 
-    int best_index = std::distance(scores.begin(), std::min_element(scores.begin(), scores.end()));
+Particle findGBest(std::vector<Particle> &particles, std::vector<double> scores)
+{
+    int best_index = std::distance(scores.begin(), std::min_element(scores.begin(),
+                                                                    scores.begin()));
     Particle best = (particles[best_index]);
     return best;
 }
-std::vector<double> getScores()
+
+Particle findBest(std::vector<Particle> &particles, std::vector<double> scores, int index)
+{
+    std::vector<Particle> neighbours;
+    std::vector<double> neighbours_scores;
+    if (index == 0) {
+        neighbours.push_back(particles.back());
+    } else {
+        neighbours.push_back(particles[index - 1]);
+    }
+
+    if (index == particles.size() - 1) {
+        neighbours.push_back(particles.front());
+    } else {
+        neighbours.push_back(particles[index + 1]);
+    }
+    for (auto &part : neighbours) {
+        neighbours_scores.push_back(part.getScore());
+    }
+
+    return findGBest(neighbours, neighbours_scores);
+}
+
+
 
 int main(int argc, char **argv)
 {
@@ -126,15 +154,16 @@ int main(int argc, char **argv)
     for (int i = 0; i < num_part; i++) {
         particles.push_back(Particle(source_cloud, target_cloud, params, i));
     }
-    gbest = findBest(particles);
+    scores = getScores(particles);
     for (auto &part : particles) {
+        gbest = findBest(particles, scores, part.getId());
         part.setGlobalBest(gbest);
         std::cout << part << std::endl;
     }
+    gbest = findGBest(particles, scores);
     std::cout << "................." << std::endl;
     std::cout << "Best: " << gbest << std::endl;
     std::cout << "---------------------" << std::endl;
-
 
     for (int i = 0; i < 1000; i++) {
         for (int j = 0; j < particles.size(); j++) {
@@ -143,12 +172,13 @@ int main(int argc, char **argv)
             std::cout << particles[j] << std::endl;
         }
         std::cout << "................." << std::endl;
-        Particle current_best = findBest(particles);
-        if (current_best.getScore() < gbest.getScore()) {
-            gbest = current_best;
-            for (auto &part : particles) {
-                part.setGlobalBest(gbest);
-            }
+
+        for (int ind = 0; ind < particles.size(); ind++) {
+            Particle current_best = findBest(particles, scores, ind);
+            particles[ind].setGlobalBest(current_best);
+        }
+        if (gbest.getScore() > findGBest(particles, scores).getScore()) {
+            gbest = findGBest(particles, scores);
         }
         std::cout << "Gen " << i << " best: " << gbest << std::endl;
         std::cout << "---------------------" << std::endl;
