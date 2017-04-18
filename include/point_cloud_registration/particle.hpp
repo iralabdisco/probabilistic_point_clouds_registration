@@ -84,8 +84,8 @@ public:
             }
         }
         if (valid) {
-            score_ = registration_->align();
-            if (score_ < best_score_) {
+            score_ =  - registration_->align();
+            if (score_ > best_score_) {
                 best_score_ = score_;
                 best_position_ = position_;
             }
@@ -105,7 +105,7 @@ public:
 
     void setGlobalBest(Particle &gbest)
     {
-        if (gbest_score_ > gbest.score_) {
+        if (gbest_score_ < gbest.score_) {
             global_best_ = gbest.position_;
             gbest_score_ = gbest.score_;
         }
@@ -158,6 +158,12 @@ std::ostream &operator<<(std::ostream &os, Particle const &p)
     os << " --> " << p.getScore();
     return os;
 }
+
+bool cmp(const Particle &p1, const Particle &p2)
+{
+    return p1.getScore() < p2.getScore();
+}
+
 }  // namespace point_cloud_registration
 
 #endif
