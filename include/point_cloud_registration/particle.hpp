@@ -33,7 +33,7 @@ public:
         }
 
         setParamsFromPosition();
-        score_ = registration_->align();
+        score_ = - registration_->align();
         best_score_ = score_;
         best_position_ = position_;
         global_best_ = position_;
@@ -103,7 +103,7 @@ public:
         registration_ = std::make_unique<PSORegistration>(initial_guess_, target_cloud_, params_);
     }
 
-    void setGlobalBest(Particle &gbest)
+    void setGlobalBest(Particle gbest)
     {
         if (gbest_score_ < gbest.score_) {
             global_best_ = gbest.position_;
@@ -124,6 +124,11 @@ public:
     int getId() const
     {
         return id_;
+    }
+
+    static bool cmp(const Particle &p1, const Particle &p2)
+    {
+        return p1.getScore() < p2.getScore();
     }
 
 private:
@@ -157,11 +162,6 @@ std::ostream &operator<<(std::ostream &os, Particle const &p)
     }
     os << " --> " << p.getScore();
     return os;
-}
-
-bool cmp(const Particle &p1, const Particle &p2)
-{
-    return p1.getScore() < p2.getScore();
 }
 
 }  // namespace point_cloud_registration

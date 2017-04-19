@@ -17,7 +17,7 @@ find_package(PCL 1.8 REQUIRED)
 find_package(Ceres REQUIRED)
 find_package(GTest REQUIRED)
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17")
 
 include_directories(include ${Boost_INCLUDE_DIRS} ${PCL_INCLUDE_DIRS} ${CERES_INCLUDE_DIRS} ${GTEST_INCLUDE_DIRS})
 link_directories(${PCL_LIBRARY_DIRS})
