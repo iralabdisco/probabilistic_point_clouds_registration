@@ -44,7 +44,16 @@ public:
                     k++;
                 }
             }
-            data_association.setFromTriplets(tripletList.begin(), tripletList.end());
+            std::vector<Eigen::Triplet<double>> tripletList_filtered;
+            if (tripletList.size() > 0) {
+                double median = point_cloud_registration::medianDistance(tripletList);
+                for (auto t : tripletList) {
+                    if (t.value() <= median * 5) {
+                        tripletList_filtered.push_back(t);
+                    }
+                }
+            }
+            data_association.setFromTriplets(tripletList_filtered.begin(), tripletList_filtered.end());
             data_association.makeCompressed();
 
             PointCloudRegistrationIteration registration(*source_cloud_, *target_cloud_, data_association,

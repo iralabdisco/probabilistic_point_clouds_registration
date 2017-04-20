@@ -115,7 +115,7 @@ int main(int argc, char **argv)
         swarm.add_particle(Particle(source_cloud, target_cloud, params, i));
     }
 
-    swarm.evolve(5);
+    swarm.evolve(500);
 
 
     return 0;

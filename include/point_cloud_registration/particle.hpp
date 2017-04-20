@@ -19,17 +19,17 @@ public:
     Particle(pcl::PointCloud<pcl::PointXYZ>::Ptr source_cloud,
              pcl::PointCloud<pcl::PointXYZ>::Ptr target_cloud,
              PointCloudRegistrationParams parameters, int id): source_cloud_(source_cloud),
-        target_cloud_(target_cloud), params_(parameters), max_position_(7), min_position_(7), position_(7),
-        velocity_(7), id_(id), generator(rd())
+        target_cloud_(target_cloud), params_(parameters), max_position_(8),
+        min_position_(8), position_(8),
+        velocity_(8), id_(id), generator(rd())
     {
         initial_guess_ = boost::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
-        max_position_ << 0.5, 0.5, 0.5, 360, 360, 360, 100;
-        min_position_ << -0.5, -0.5, -0.5, 0, 0, 0, 100;
+        max_position_ << 0.5, 0.5, 0.5, 360, 360, 360, 0.5, 50;
+        min_position_ << -0.5, -0.5, -0.5, 0, 0, 0, 0, 1;
         for (int i = 0; i < position_.size(); i++) {
             std::uniform_real_distribution<double> random_number(min_position_[i], max_position_[i]);
             position_[i] = random_number(generator);
             velocity_ = max_position_ / 3.0;
-            velocity_[6] = 0;
         }
 
         setParamsFromPosition();
@@ -100,6 +100,7 @@ public:
                                                                               position_[4] * 0.0174533, position_[5] * 0.0174533));
         pcl::transformPointCloud (*source_cloud_, *initial_guess_, initial_guess_trans);
         params_.radius = position_[6];
+        params_.max_neighbours = position_[7];
         registration_ = std::make_unique<PSORegistration>(initial_guess_, target_cloud_, params_);
     }
 
@@ -150,6 +151,7 @@ private:
     PointCloudRegistrationParams params_;
     const double ALPHA = 0.7298;
     const double BETA = 1.4961;
+    std::size_t STATE_SIZE_ = 8;
     int id_;
 };
 
