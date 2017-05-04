@@ -68,6 +68,42 @@ inline double medianClosestDistance(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud1,
     return median_distance;
 }
 
+inline double robustMedianClosestDistance(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud1,
+                                          pcl::PointCloud<pcl::PointXYZ>::Ptr cloud2)
+{
+    double median_distance = 0;
+    pcl::KdTreeFLANN<pcl::PointXYZ> kdtree;
+    kdtree.setInputCloud(cloud2);
+    std::vector<float> distances;
+    std::vector<float> filtered_distances;
+    for (std::size_t i = 0; i < cloud1->size(); i++) {
+        std::vector<int> neighbours;
+        std::vector<float> dist;
+        neighbours.reserve(1);
+        distances.reserve(1);
+        kdtree.nearestKSearch(*cloud1, i, 1, neighbours, dist);
+        distances.push_back(dist[0]);
+    }
+    std::sort(distances.begin(), distances.end());
+    if (distances.size() % 2 != 0) {
+        median_distance = distances[(distances.size() + 1) / 2];
+    } else {
+        median_distance = (distances[distances.size() / 2] + distances[(distances.size() / 2) + 1]) / 2.0;
+    }
+    for (auto it = distances.begin(); it != distances.end(); it++) {
+        if (*it <= median_distance * 3) {
+            filtered_distances.push_back(*it);
+        }
+    }
+    if (filtered_distances.size() % 2 != 0) {
+        median_distance = filtered_distances[(filtered_distances.size() + 1) / 2];
+    } else {
+        median_distance = (filtered_distances[filtered_distances.size() / 2] +
+                           filtered_distances[(filtered_distances.size() / 2) + 1]) / 2.0;
+    }
+    return median_distance;
+}
+
 inline double medianDistance(std::vector<Eigen::Triplet<double>> tripletList)
 {
     double median_distance;

@@ -53,7 +53,7 @@ public:
                     }
                 }
             }
-            data_association.setFromTriplets(tripletList_filtered.begin(), tripletList_filtered.end());
+            data_association.setFromTriplets(tripletList.begin(), tripletList.end());
             data_association.makeCompressed();
 
             PointCloudRegistrationIteration registration(*source_cloud_, *target_cloud_, data_association,
@@ -72,7 +72,7 @@ public:
             cost_drop_ = (summary.initial_cost - summary.final_cost) / summary.initial_cost;
             current_iteration_++;
         }
-        return point_cloud_registration::averageClosestDistance(source_cloud_, target_cloud_);
+        return point_cloud_registration::robustMedianClosestDistance(source_cloud_, target_cloud_);
 
     }
 

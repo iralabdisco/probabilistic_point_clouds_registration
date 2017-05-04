@@ -24,20 +24,29 @@ public:
         velocity_(8), id_(id), generator(rd())
     {
         initial_guess_ = boost::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
-        max_position_ << 0.5, 0.5, 0.5, 360, 360, 360, 0.5, 50;
-        min_position_ << -0.5, -0.5, -0.5, 0, 0, 0, 0, 1;
+        moved_source_cloud_ = boost::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
+        max_position_ << 100, 100, 100, 360, 360, 360, 0, 0;
+        min_position_ << -100, -100, -100, 0, 0, 0, 0, 0;
         for (int i = 0; i < position_.size(); i++) {
             std::uniform_real_distribution<double> random_number(min_position_[i], max_position_[i]);
             position_[i] = random_number(generator);
-            velocity_ = max_position_ / 3.0;
         }
-
+        velocity_ = (max_position_ - min_position_) / 10.0;
         setParamsFromPosition();
         score_ = - registration_->align();
         best_score_ = score_;
         best_position_ = position_;
         global_best_ = position_;
         gbest_score_ = score_;
+    }
+
+    void randomRestart()
+    {
+        for (int i = 0; i < position_.size(); i++) {
+            std::uniform_real_distribution<double> random_number(min_position_[i], max_position_[i]);
+            position_[i] = random_number(generator);
+        }
+        velocity_ = (max_position_ - min_position_) / 10.0;
     }
 
     Particle()
@@ -54,6 +63,7 @@ public:
     {
         source_cloud_ = other.source_cloud_;
         initial_guess_ = boost::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
+        moved_source_cloud_ = boost::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
         target_cloud_ = other.target_cloud_;
         position_ = other.position_;
         velocity_ = other.velocity_;
@@ -85,6 +95,40 @@ public:
         }
         if (valid) {
             score_ =  - registration_->align();
+            if (score_ > best_score_) {
+                best_score_ = score_;
+                best_position_ = position_;
+            }
+        }
+    }
+
+    void evolveTest(double avoidance_coeff)
+    {
+//        std::uniform_real_distribution<double> random_beta(0, 2.05);
+//        velocity_ = ALPHA * (velocity_ + random_beta(generator) * (best_position_ - position_) +
+//                             random_beta(
+//                                 generator) * (global_best_ - position_));
+        std::uniform_real_distribution<double> random_beta(0, BETA);
+
+        velocity_ = velocity_ * ALPHA + avoidance_coeff * (random_beta(generator) *
+                                                           (best_position_ - position_) + random_beta(
+                                                               generator) * (global_best_ - position_));
+        position_ = position_ + velocity_;
+        bool valid = true;
+        for (int i = 0; i < position_.size(); i++) {
+            if (position_[i] > max_position_[i] || position_[i] < min_position_[i]) {
+                valid = false;
+            }
+        }
+        if (valid) {
+            Eigen::Affine3d trans(Eigen::Affine3d::Identity());
+            trans.translate(Eigen::Vector3d(position_[0], position_[1], position_[2]));
+            trans.rotate(point_cloud_registration::euler2Quaternion(position_[3] * 0.0174533,
+                                                                    position_[4] * 0.0174533,
+                                                                    position_[5] * 0.0174533));
+
+            pcl::transformPointCloud (*source_cloud_, *moved_source_cloud_, trans);
+            score_ =  - robustMedianClosestDistance(moved_source_cloud_, target_cloud_);
             if (score_ > best_score_) {
                 best_score_ = score_;
                 best_position_ = position_;
@@ -136,6 +180,7 @@ private:
     pcl::PointCloud<pcl::PointXYZ>::Ptr source_cloud_;
     pcl::PointCloud<pcl::PointXYZ>::Ptr initial_guess_;
     pcl::PointCloud<pcl::PointXYZ>::Ptr target_cloud_;
+    pcl::PointCloud<pcl::PointXYZ>::Ptr moved_source_cloud_;
     std::unique_ptr<PSORegistration> registration_;
     Eigen::VectorXd position_;
     Eigen::VectorXd velocity_;
@@ -149,7 +194,8 @@ private:
     Eigen::VectorXd max_position_;
     Eigen::VectorXd min_position_;
     PointCloudRegistrationParams params_;
-    const double ALPHA = 0.7298;
+//    const double ALPHA = 0.7298;
+    const double ALPHA = 0.9;
     const double BETA = 1.4961;
     std::size_t STATE_SIZE_ = 8;
     int id_;

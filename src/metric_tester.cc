@@ -18,6 +18,7 @@
 
 
 using point_cloud_registration::medianClosestDistance;
+using point_cloud_registration::robustMedianClosestDistance;
 using point_cloud_registration::averageClosestDistance;
 using point_cloud_registration::calculateMSE;
 
@@ -64,23 +65,30 @@ int main(int argc, char **argv)
     report_file.open(report_file_name);
     report_file << "Source cloud: " << source_cloud_file_name << " Target cloud: " <<
                 target_cloud_file_name << std::endl;
-    auto axis = Eigen::Vector3d(0, 1, 0);
-    report_file << "Axis: " << axis[0] << " " << axis[1] << " " << axis[2] << std::endl;
-    report_file << "Angle, MSE_gtruth, MedianClosestDistance, AverageClosestDistance" << std::endl;
-    for (double disp = 0; disp <= 2; disp += 0.01) {
-        //for (double angle = 0; angle <= 360; angle += 1) {
-        pcl::PointCloud<PointType>::Ptr moved_source_cloud =
-            boost::make_shared<pcl::PointCloud<PointType>>();
-        //Eigen::Affine3d trans(Eigen::AngleAxis<double>(angle * 0.0174533, axis));
-        Eigen::Affine3d trans(Eigen::Translation<double, 3>(disp, 0, 0));
-        pcl::transformPointCloud (*source_cloud, *moved_source_cloud, trans);
-        double mse_gtruth = calculateMSE(moved_source_cloud, target_cloud);
-        double median_score = medianClosestDistance(moved_source_cloud, target_cloud);
-        double average_score = averageClosestDistance(moved_source_cloud, target_cloud);
-//        report_file << angle << ", " << mse_gtruth << ", " << median_score << ", " << average_score <<
+    auto axis = Eigen::Vector3d(1, 1, 1);
+    report_file <<
+                "Pitch, Yaw,  MSE_gtruth, MedianClosestDistance, AverageClosestDistance, RobustMedianClosestDistance"
+                <<
+                std::endl;
+    for (double pitch = 125; pitch <= 360; pitch += 1) {
+        for (double yaw = 0; yaw <= 360; yaw += 1) {
+            pcl::PointCloud<PointType>::Ptr moved_source_cloud =
+                boost::make_shared<pcl::PointCloud<PointType>>();
+            Eigen::Affine3d trans(Eigen::Affine3d::Identity());
+            trans.rotate(point_cloud_registration::euler2Quaternion(0, pitch * 0.0174533, yaw * 0.0174533));
+
+            pcl::transformPointCloud (*source_cloud, *moved_source_cloud, trans);
+            double mse_gtruth = calculateMSE(moved_source_cloud, target_cloud);
+            double median_score = medianClosestDistance(moved_source_cloud, target_cloud);
+            double average_score = averageClosestDistance(moved_source_cloud, target_cloud);
+            double robust_median_score = robustMedianClosestDistance(moved_source_cloud, target_cloud);
+
+            report_file << pitch << ", " << yaw << ", " << mse_gtruth << ", " << median_score << ", " <<
+                        average_score << ", "
+                        << robust_median_score << std::endl;
+//        report_file << disp << ", " << mse_gtruth << ", " << median_score << ", " << average_score <<
 //                    std::endl;
-        report_file << disp << ", " << mse_gtruth << ", " << median_score << ", " << average_score <<
-                    std::endl;
+        }
     }
 
 
