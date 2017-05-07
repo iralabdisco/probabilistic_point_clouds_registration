@@ -4,7 +4,7 @@
 #include <fstream>
 #include <thread>
 
-#include <omp.h>
+//#include <omp.h>
 
 #include "point_cloud_registration/particle.hpp"
 
@@ -59,7 +59,7 @@ public:
             #pragma omp parallel for num_threads(std::thread::hardware_concurrency())
             for (int j = 0; j < particles_.size(); j++) {
                 if (restart) {
-                    particles_[j].randomRestart();
+                    //particles_[j].randomRestart();
                 }
                 if (avoidance_rate > 0) {
                     particles_[j].evolveTest(1);

@@ -20,13 +20,14 @@ public:
              pcl::PointCloud<pcl::PointXYZ>::Ptr target_cloud,
              PointCloudRegistrationParams parameters, int id): source_cloud_(source_cloud),
         target_cloud_(target_cloud), params_(parameters), max_position_(8),
-        min_position_(8), position_(8),
+        min_position_(8), position_(8), max_velocity_(8),
         velocity_(8), id_(id), generator(rd())
     {
         initial_guess_ = boost::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
         moved_source_cloud_ = boost::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
         max_position_ << 100, 100, 100, 360, 360, 360, 0, 0;
         min_position_ << -100, -100, -100, 0, 0, 0, 0, 0;
+        max_velocity_ << 5, 5, 5, 15, 15, 15, 0, 0;
         for (int i = 0; i < position_.size(); i++) {
             std::uniform_real_distribution<double> random_number(min_position_[i], max_position_[i]);
             position_[i] = random_number(generator);
@@ -67,6 +68,7 @@ public:
         target_cloud_ = other.target_cloud_;
         position_ = other.position_;
         velocity_ = other.velocity_;
+        max_velocity_ = other.max_velocity_;
         best_position_ = other.best_position_;
         score_ = other.score_;
         best_score_ = other.best_score_;
@@ -104,15 +106,22 @@ public:
 
     void evolveTest(double avoidance_coeff)
     {
-//        std::uniform_real_distribution<double> random_beta(0, 2.05);
-//        velocity_ = ALPHA * (velocity_ + random_beta(generator) * (best_position_ - position_) +
-//                             random_beta(
-//                                 generator) * (global_best_ - position_));
-        std::uniform_real_distribution<double> random_beta(0, BETA);
+        std::uniform_real_distribution<double> random_beta(0, 2.05);
+        velocity_ = ALPHA * (velocity_ + random_beta(generator) * (best_position_ - position_) +
+                             random_beta(generator) * (global_best_ - position_));
+//        std::uniform_real_distribution<double> random_beta(0, BETA);
 
-        velocity_ = velocity_ * ALPHA + avoidance_coeff * (random_beta(generator) *
-                                                           (best_position_ - position_) + random_beta(
-                                                               generator) * (global_best_ - position_));
+//        velocity_ = velocity_ * ALPHA + avoidance_coeff * (random_beta(generator) *
+//                                                           (best_position_ - position_) + random_beta(
+//                                                               generator) * (global_best_ - position_));
+        for (int i = 0; i < velocity_.size(); i++) {
+            if (velocity_[i] > max_velocity_[i]) {
+                velocity_[i] = max_velocity_[i];
+            } else if (velocity_[i] < -max_velocity_[i]) {
+                velocity_[i] = -max_velocity_[i];
+            }
+        }
+
         position_ = position_ + velocity_;
         bool valid = true;
         for (int i = 0; i < position_.size(); i++) {
@@ -128,7 +137,7 @@ public:
                                                                     position_[5] * 0.0174533));
 
             pcl::transformPointCloud (*source_cloud_, *moved_source_cloud_, trans);
-            score_ =  - robustMedianClosestDistance(moved_source_cloud_, target_cloud_);
+            score_ =  - medianClosestDistance(moved_source_cloud_, target_cloud_);
             if (score_ > best_score_) {
                 best_score_ = score_;
                 best_position_ = position_;
@@ -184,6 +193,7 @@ private:
     std::unique_ptr<PSORegistration> registration_;
     Eigen::VectorXd position_;
     Eigen::VectorXd velocity_;
+    Eigen::VectorXd max_velocity_;
     Eigen::VectorXd best_position_;
     double score_;
     double best_score_;
@@ -194,8 +204,8 @@ private:
     Eigen::VectorXd max_position_;
     Eigen::VectorXd min_position_;
     PointCloudRegistrationParams params_;
-//    const double ALPHA = 0.7298;
-    const double ALPHA = 0.9;
+    const double ALPHA = 0.7298;
+    //const double ALPHA = 0.9;
     const double BETA = 1.4961;
     std::size_t STATE_SIZE_ = 8;
     int id_;
