@@ -25,8 +25,8 @@ public:
     {
         initial_guess_ = boost::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
         moved_source_cloud_ = boost::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
-        max_position_ << 100, 100, 100, 360, 360, 360, 0, 0;
-        min_position_ << -100, -100, -100, 0, 0, 0, 0, 0;
+        max_position_ << 50, 50, 50, 360, 360, 360, 6, 10;
+        min_position_ << -50, -50, -50, 0, 0, 0, 6, 10;
         max_velocity_ << 5, 5, 5, 15, 15, 15, 0, 0;
         for (int i = 0; i < position_.size(); i++) {
             std::uniform_real_distribution<double> random_number(min_position_[i], max_position_[i]);
@@ -87,6 +87,15 @@ public:
         std::uniform_real_distribution<double> random_beta(0, BETA);
         velocity_ = velocity_ * ALPHA + random_beta(generator) * (best_position_ - position_) + random_beta(
                         generator) * (global_best_ - position_);
+
+        for (int i = 0; i < velocity_.size(); i++) {
+            if (velocity_[i] > max_velocity_[i]) {
+                velocity_[i] = max_velocity_[i];
+            } else if (velocity_[i] < -max_velocity_[i]) {
+                velocity_[i] = -max_velocity_[i];
+            }
+        }
+
         position_ = position_ + velocity_;
         setParamsFromPosition();
         bool valid = true;
@@ -106,14 +115,14 @@ public:
 
     void evolveTest(double avoidance_coeff)
     {
-        std::uniform_real_distribution<double> random_beta(0, 2.05);
-        velocity_ = ALPHA * (velocity_ + random_beta(generator) * (best_position_ - position_) +
-                             random_beta(generator) * (global_best_ - position_));
-//        std::uniform_real_distribution<double> random_beta(0, BETA);
+//        std::uniform_real_distribution<double> random_beta(0, 2.05);
+//        velocity_ = ALPHA * (velocity_ + random_beta(generator) * (best_position_ - position_) +
+//                             random_beta(generator) * (global_best_ - position_));
+        std::uniform_real_distribution<double> random_beta(0, BETA);
 
-//        velocity_ = velocity_ * ALPHA + avoidance_coeff * (random_beta(generator) *
-//                                                           (best_position_ - position_) + random_beta(
-//                                                               generator) * (global_best_ - position_));
+        velocity_ = velocity_ * ALPHA + avoidance_coeff * (random_beta(generator) *
+                                                           (best_position_ - position_) + random_beta(
+                                                               generator) * (global_best_ - position_));
         for (int i = 0; i < velocity_.size(); i++) {
             if (velocity_[i] > max_velocity_[i]) {
                 velocity_[i] = max_velocity_[i];
@@ -127,6 +136,9 @@ public:
         for (int i = 0; i < position_.size(); i++) {
             if (position_[i] > max_position_[i] || position_[i] < min_position_[i]) {
                 valid = false;
+//                std::uniform_real_distribution<double> random_number(min_position_[i], max_position_[i]);
+//                position_[i] = random_number(generator);
+//                velocity_[i] = max_velocity_[i] / 10;
             }
         }
         if (valid) {

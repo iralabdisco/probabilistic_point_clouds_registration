@@ -4,7 +4,7 @@
 #include <fstream>
 #include <thread>
 
-//#include <omp.h>
+#include <omp.h>
 
 #include "point_cloud_registration/particle.hpp"
 
@@ -40,9 +40,9 @@ public:
         for (int i = 0; i < n_gen; i++) {
 
             if (i < 0.75 * n_gen) {
-                avoidance_rate = random_gen(generator_);
+                avoidance_rate = random_gen(generator_) * particles_.size();
             } else {
-                avoidance_rate = 1;
+                avoidance_rate = 1 * particles_.size();
             }
             double avoidance_coeff = -2 * (1 - i / n_gen);
             bool restart = false;
@@ -62,10 +62,10 @@ public:
                     //particles_[j].randomRestart();
                 }
                 if (avoidance_rate > 0) {
-                    particles_[j].evolveTest(1);
+                    particles_[j].evolve();
                     avoidance_rate--;
                 } else {
-                    particles_[j].evolveTest(1);
+                    particles_[j].evolve();
                 }
             }
             std::cout << *this << "................." << std::endl;

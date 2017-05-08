@@ -72,7 +72,7 @@ public:
             cost_drop_ = (summary.initial_cost - summary.final_cost) / summary.initial_cost;
             current_iteration_++;
         }
-        return point_cloud_registration::robustMedianClosestDistance(source_cloud_, target_cloud_);
+        return point_cloud_registration::medianClosestDistance(source_cloud_, target_cloud_);
 
     }
 
