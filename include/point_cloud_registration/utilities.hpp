@@ -91,7 +91,7 @@ inline double robustMedianClosestDistance(pcl::PointCloud<pcl::PointXYZ>::Ptr cl
         median_distance = (distances[distances.size() / 2] + distances[(distances.size() / 2) + 1]) / 2.0;
     }
     for (auto it = distances.begin(); it != distances.end(); it++) {
-        if (*it <= median_distance * 3) {
+        if (*it <= median_distance * 3 && *it >= median_distance / 3.0) {
             filtered_distances.push_back(*it);
         }
     }

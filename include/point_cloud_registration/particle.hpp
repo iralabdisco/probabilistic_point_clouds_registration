@@ -32,9 +32,17 @@ public:
             std::uniform_real_distribution<double> random_number(min_position_[i], max_position_[i]);
             position_[i] = random_number(generator);
         }
-        velocity_ = (max_position_ - min_position_) / 10.0;
+        velocity_  << 0, 0, 0, 0, 0, 0, 0, 0;
         setParamsFromPosition();
-        score_ = - registration_->align();
+//        score_ = - registration_->align();
+        Eigen::Affine3d trans(Eigen::Affine3d::Identity());
+        trans.translate(Eigen::Vector3d(position_[0], position_[1], position_[2]));
+        trans.rotate(point_cloud_registration::euler2Quaternion(position_[3] * 0.0174533,
+                                                                position_[4] * 0.0174533,
+                                                                position_[5] * 0.0174533));
+
+        pcl::transformPointCloud (*source_cloud_, *moved_source_cloud_, trans);
+        score_ =  - robustMedianClosestDistance(moved_source_cloud_, target_cloud_);
         best_score_ = score_;
         best_position_ = position_;
         global_best_ = position_;
@@ -113,16 +121,16 @@ public:
         }
     }
 
-    void evolveTest(double avoidance_coeff)
+    void evolveTest()
     {
 //        std::uniform_real_distribution<double> random_beta(0, 2.05);
 //        velocity_ = ALPHA * (velocity_ + random_beta(generator) * (best_position_ - position_) +
 //                             random_beta(generator) * (global_best_ - position_));
-        std::uniform_real_distribution<double> random_beta(0, BETA);
+        std::uniform_real_distribution<double> random_beta(0, 1);
 
-        velocity_ = velocity_ * ALPHA + avoidance_coeff * (random_beta(generator) *
-                                                           (best_position_ - position_) + random_beta(
-                                                               generator) * (global_best_ - position_));
+        velocity_ = velocity_ * ALPHA +  2.1 * random_beta(generator) * (best_position_ - position_) +
+                    random_beta(generator) * BETA * (global_best_ - position_);
+
         for (int i = 0; i < velocity_.size(); i++) {
             if (velocity_[i] > max_velocity_[i]) {
                 velocity_[i] = max_velocity_[i];
@@ -134,14 +142,18 @@ public:
         position_ = position_ + velocity_;
         bool valid = true;
         for (int i = 0; i < position_.size(); i++) {
-            if (position_[i] > max_position_[i] || position_[i] < min_position_[i]) {
-                valid = false;
-//                std::uniform_real_distribution<double> random_number(min_position_[i], max_position_[i]);
-//                position_[i] = random_number(generator);
-//                velocity_[i] = max_velocity_[i] / 10;
+            if (position_[i] > max_position_[i]) {
+//               valid = false;
+                std::uniform_real_distribution<double> random_number(0, 1);
+                position_[i] = max_position_[i];
+                velocity_[i] = - random_number(generator) * velocity_[i];
+            } else if (position_[i] < min_position_[i]) {
+                std::uniform_real_distribution<double> random_number(0, 1);
+                position_[i] = min_position_[i];
+                velocity_[i] = - random_number(generator) * velocity_[i];
             }
         }
-        if (valid) {
+        if (1) {
             Eigen::Affine3d trans(Eigen::Affine3d::Identity());
             trans.translate(Eigen::Vector3d(position_[0], position_[1], position_[2]));
             trans.rotate(point_cloud_registration::euler2Quaternion(position_[3] * 0.0174533,
@@ -149,7 +161,7 @@ public:
                                                                     position_[5] * 0.0174533));
 
             pcl::transformPointCloud (*source_cloud_, *moved_source_cloud_, trans);
-            score_ =  - medianClosestDistance(moved_source_cloud_, target_cloud_);
+            score_ =  - robustMedianClosestDistance(moved_source_cloud_, target_cloud_);
             if (score_ > best_score_) {
                 best_score_ = score_;
                 best_position_ = position_;
@@ -218,7 +230,8 @@ private:
     PointCloudRegistrationParams params_;
     const double ALPHA = 0.7298;
     //const double ALPHA = 0.9;
-    const double BETA = 1.4961;
+//    const double BETA = 1.4961;
+    const double BETA = 1.9;
     std::size_t STATE_SIZE_ = 8;
     int id_;
 };
