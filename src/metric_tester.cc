@@ -101,7 +101,8 @@ int main(int argc, char **argv)
 //            double mse_gtruth = calculateMSE(moved_source_cloud, target_cloud);
 //            double median_score = medianClosestDistance(moved_source_cloud, target_cloud);
 //            double average_score = averageClosestDistance(moved_source_cloud, target_cloud);
-            double robust_median_score = robustMedianClosestDistance(moved_source_cloud, target_cloud);
+            double robust_median_score = point_cloud_registration::sumSquaredError(moved_source_cloud,
+                                                                                   target_cloud);
 
 //            report_file << pitch << ", " << yaw << ", " << mse_gtruth << ", " << median_score << ", " <<
 //                        average_score << ", "

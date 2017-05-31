@@ -21,43 +21,37 @@ public:
         particles_.push_back(part);
     }
 
-    void evolve(int n_gen)
+    void init()
     {
-        std::ofstream report_file;
-        report_file.open("risultatissimi.txt");
-        std::uniform_real_distribution<double> random_gen(0, 1);
-
         #pragma omp parallel for num_threads(std::thread::hardware_concurrency())
         for (int i = 0; i < particles_.size(); i++) {
             particles_[i].setGlobalBest(findLBest(particles_[i].getId()));
         }
 
         best_ = findGBest();
-        std::cout << "................." << std::endl;
-        std::cout << "Best: " << best_ << std::endl;
-        std::cout << "---------------------" << std::endl;
-        for (int i = 0; i < n_gen; i++) {
+    }
 
-            #pragma omp parallel for num_threads(std::thread::hardware_concurrency())
-            for (int j = 0; j < particles_.size(); j++) {
-                particles_[j].evolveTest();
-            }
+    Particle getBest()
+    {
+        return best_;
+    }
 
-            std::cout << *this << "................." << std::endl;
-
-            for (int ind = 0; ind < particles_.size(); ind++) {
-                particles_[ind].setGlobalBest(findLBest(ind));
-            }
-
-            Particle gen_best = findGBest();
-            if (best_.getScore() < gen_best.getScore()) {
-                best_ = gen_best;
-            }
-            std::cout << "Gen " << i << " best: " << best_ << std::endl;
-            std::cout << "---------------------" << std::endl;
-            report_file << best_ << std::endl;
-
+    void evolve()
+    {
+        #pragma omp parallel for num_threads(std::thread::hardware_concurrency())
+        for (int j = 0; j < particles_.size(); j++) {
+            particles_[j].evolve();
         }
+
+        for (int ind = 0; ind < particles_.size(); ind++) {
+            particles_[ind].setGlobalBest(findLBest(ind));
+        }
+
+        Particle gen_best = findGBest();
+        if (best_.getScore() < gen_best.getScore()) {
+            best_ = gen_best;
+        }
+
     }
 
 private:
@@ -99,6 +93,9 @@ std::ostream &operator<<(std::ostream &os, Swarm const &s)
     for (auto &p : s.particles_) {
         os << p << std::endl;
     }
+    os << "................." << std::endl;
+    os << "Best: " << s.best_ << std::endl;
+    os << "---------------------";
     return os;
 }
 

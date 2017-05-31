@@ -1,9 +1,9 @@
 #ifndef POINT_CLOUD_REGISTRATION_UTILITIES_HPP
 #define POINT_CLOUD_REGISTRATION_UTILITIES_HPP
 #include <assert.h>
-
+#include <limits>
 #include <Eigen/Core>
-
+#include <Eigen/Sparse>
 #include <pcl/common/distances.h>
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
@@ -42,6 +42,44 @@ inline double averageClosestDistance(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud1,
     }
     avgDistance /= cloud1->size();
     return avgDistance;
+}
+
+inline double sumSquaredError(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud1,
+                              pcl::PointCloud<pcl::PointXYZ>::Ptr cloud2)
+{
+    double sum = 0;
+    double median_distance;
+    pcl::KdTreeFLANN<pcl::PointXYZ> kdtree;
+    kdtree.setInputCloud(cloud2);
+    std::vector<double> all_distances;
+    for (std::size_t i = 0; i < cloud1->size(); i++) {
+        std::vector<int> neighbours;
+        std::vector<float> distances;
+        neighbours.reserve(1);
+        distances.reserve(1);
+        kdtree.nearestKSearch(*cloud1, i, 1, neighbours, distances);
+        all_distances.push_back(distances[0]);
+    }
+
+    std::sort(all_distances.begin(), all_distances.end());
+    if (all_distances.size() % 2 != 0) {
+        median_distance = all_distances[(all_distances.size() + 1) / 2];
+    } else {
+        median_distance = (all_distances[all_distances.size() / 2] + all_distances[(all_distances.size() /
+                                                                                    2) + 1]) / 2.0;
+    }
+    int num_filtered = 0;
+    for (auto it = all_distances.begin(); it != all_distances.end(); it++) {
+
+        if (*it <= median_distance * 3 && *it >= median_distance / 3) {
+            sum += *it;
+            num_filtered++;
+        }
+    }
+    if (num_filtered < 10) {
+        return std::numeric_limits<double>::max();
+    }
+    return sum / num_filtered;
 }
 
 inline double medianClosestDistance(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud1,
@@ -91,7 +129,7 @@ inline double robustMedianClosestDistance(pcl::PointCloud<pcl::PointXYZ>::Ptr cl
         median_distance = (distances[distances.size() / 2] + distances[(distances.size() / 2) + 1]) / 2.0;
     }
     for (auto it = distances.begin(); it != distances.end(); it++) {
-        if (*it <= median_distance * 3 && *it >= median_distance / 3.0) {
+        if (*it <= median_distance * 5 && *it >= median_distance / 5.0) {
             filtered_distances.push_back(*it);
         }
     }
@@ -101,7 +139,7 @@ inline double robustMedianClosestDistance(pcl::PointCloud<pcl::PointXYZ>::Ptr cl
         median_distance = (filtered_distances[filtered_distances.size() / 2] +
                            filtered_distances[(filtered_distances.size() / 2) + 1]) / 2.0;
     }
-    return median_distance;
+    return median_distance / filtered_distances.size();
 }
 
 inline double medianDistance(std::vector<Eigen::Triplet<double>> tripletList)
