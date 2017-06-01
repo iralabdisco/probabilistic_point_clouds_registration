@@ -33,6 +33,7 @@ int main(int argc, char **argv)
     std::string source_file_name;
     std::string target_file_name;
     std::string ground_truth_name;
+    bool ground_truth = false;
     int num_part = 0;
     double source_filter_size, target_filter_size;
     pcl::VoxelGrid<pcl::PointXYZ> voxel_filter;
@@ -63,6 +64,12 @@ int main(int argc, char **argv)
         source_filter_size = source_filter_arg.getValue();
         target_filter_size = target_filter_arg.getValue();
         num_part = num_part_arg.getValue();
+
+        if (ground_truth_arg.isSet()) {
+            ground_truth = true;
+            ground_truth_name = ground_truth_arg.getValue();
+        }
+
     } catch (TCLAP::ArgException &e) {
         std::cerr << "error: " << e.error() << " for arg " << e.argId() << std::endl;
         exit(EXIT_FAILURE);
@@ -70,13 +77,10 @@ int main(int argc, char **argv)
 
     std::cout << "Loading source point cloud from " << source_file_name << std::endl;
     pcl::PointCloud<PointType>::Ptr source_cloud = boost::make_shared<pcl::PointCloud<PointType>>();
-    pcl::PCLPointCloud2::Ptr tmp_source_cloud = boost::make_shared<pcl::PCLPointCloud2>();
-    if (pcl::io::loadPCDFile(source_file_name, *tmp_source_cloud, translation_gt,
-                             orientation_gt) == -1) {
+    if (pcl::io::loadPCDFile(source_file_name, *source_cloud) == -1) {
         std::cout << "Could not load source cloud, closing" << std::endl;
         exit(EXIT_FAILURE);
     }
-    pcl::fromPCLPointCloud2(*tmp_source_cloud, *source_cloud);
 
     std::cout << "Loading target point cloud from " << target_file_name << std::endl;
     pcl::PointCloud<PointType>::Ptr target_cloud =
@@ -98,11 +102,23 @@ int main(int argc, char **argv)
         voxel_filter.filter(*target_cloud);
     }
 
-
     pcl::PointCloud<PointType>::Ptr ground_truth_cloud =
         boost::make_shared<pcl::PointCloud<PointType>>();
-    pcl::transformPointCloud(*source_cloud, *ground_truth_cloud, translation_gt.head<3> (),
-                             orientation_gt);
+
+    if (ground_truth) {
+        std::cout << "Loading ground truth point cloud from " << ground_truth_name << std::endl;
+        if (pcl::io::loadPCDFile<PointType>(ground_truth_name, *ground_truth_cloud) == -1) {
+            std::cout << "Could not load ground truth" << std::endl;
+            ground_truth = false;
+        } else {
+            if (source_filter_size != 0) {
+                voxel_filter.setInputCloud(ground_truth_cloud);
+                voxel_filter.setLeafSize(source_filter_size, source_filter_size, source_filter_size);
+                voxel_filter.filter(*ground_truth_cloud);
+            }
+        }
+
+    }
 
     pcl::visualization::PCLVisualizer viewer("PSO Viewer");
     viewer.setBackgroundColor(255, 255, 255);
