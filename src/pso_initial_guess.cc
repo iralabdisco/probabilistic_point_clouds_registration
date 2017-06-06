@@ -9,7 +9,6 @@
 
 #include <Eigen/Core>
 #include <pcl/common/transforms.h>
-#include <pcl/PCLPointCloud2.h>
 #include <pcl/conversions.h>
 #include <pcl/filters/voxel_grid.h>
 #include <pcl/io/pcd_io.h>
@@ -34,15 +33,12 @@ int main(int argc, char **argv)
     std::string target_file_name;
     std::string ground_truth_name;
     bool ground_truth = false;
-    int num_part = 0;
+    int num_part = 0, num_gen = 0;
     double source_filter_size, target_filter_size;
     pcl::VoxelGrid<pcl::PointXYZ> voxel_filter;
 
-    Eigen::Vector4f    translation_gt;
-    Eigen::Quaternionf orientation_gt;
-
     try {
-        TCLAP::CmdLine cmd("PSO probabilistic point cloud registration", ' ', "1.0");
+        TCLAP::CmdLine cmd("PSO Initial Guess", ' ', "1.0");
         TCLAP::UnlabeledValueArg<std::string> source_file_name_arg("source_file_name",
                                                                    "The path of the source point cloud", true, "source_cloud.pcd", "string", cmd);
         TCLAP::UnlabeledValueArg<std::string> target_file_name_arg("target_file_name",
@@ -53,6 +49,8 @@ int main(int argc, char **argv)
                                                  "The leaf size of the voxel filter of the target cloud", false, 0, "float", cmd);
         TCLAP::ValueArg<int> num_part_arg("p", "num_part",
                                           "The number of particles of the swarm", false, 50, "int", cmd);
+        TCLAP::ValueArg<int> num_gen_arg("i", "num_it",
+                                         "The number of iterations (generations) of the algorithm", false, 1000, "int", cmd);
         TCLAP::ValueArg<std::string> ground_truth_arg("g", "ground_truth",
                                                       "The path of the ground truth for the source cloud, if available", false, "ground_truth.pcd",
                                                       "string", cmd);
@@ -64,6 +62,7 @@ int main(int argc, char **argv)
         source_filter_size = source_filter_arg.getValue();
         target_filter_size = target_filter_arg.getValue();
         num_part = num_part_arg.getValue();
+        num_gen = num_gen_arg.getValue();
 
         if (ground_truth_arg.isSet()) {
             ground_truth = true;
@@ -134,8 +133,7 @@ int main(int argc, char **argv)
                                                                                  255,
                                                                                  0, 0);
     viewer.addPointCloud<pcl::PointXYZ> (ground_truth_cloud, truth_color, "groundTruth");
-//    pcl::PointCloud<PointType>::Ptr moved_source_cloud =
-//        boost::make_shared<pcl::PointCloud<PointType>>();
+
     Swarm swarm;
     for (int i = 0; i < num_part; i++) {
         swarm.add_particle(Particle(source_cloud, target_cloud, i));
@@ -144,13 +142,12 @@ int main(int argc, char **argv)
     swarm.init();
     std::cout << swarm << std::endl;
 
-    for (int i = 0; i < 5000; i++) {
+    for (int i = 0; i < num_gen; i++) {
         swarm.evolve();
         best = swarm.getBest();
         std::cout << swarm << std::endl;
-//        pcl::transformPointCloud (*source_cloud, *moved_source_cloud, best.getTransformation());
         viewer.updatePointCloudPose("source", best.getTransformation().cast<float>());
-        viewer.spinOnce (10);
+        viewer.spinOnce (1);
     }
     pcl::transformPointCloud (*source_cloud, *source_cloud, best.getTransformation());
     pcl::io::savePCDFile("output.pcd", *source_cloud);

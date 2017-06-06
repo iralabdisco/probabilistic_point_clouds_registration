@@ -53,7 +53,7 @@ add_library(${PROJECT_NAME}
 #set_target_properties(${PROJECT_NAME}_pso PROPERTIES LINKER_LANGUAGE CXX)
 
 add_executable(point_cloud_registration src/point_cloud_registration_ex.cc)
-add_executable(pso_registration src/pso.cc)
+add_executable(pso_initial_guess src/pso_initial_guess.cc)
 add_executable(metric_tester src/metric_tester.cc)
 add_executable(icp_registration src/icp_registration.cc)
 add_executable(obj_fun_analyzer src/obj_fun_analyzer.cpp)
@@ -66,7 +66,7 @@ add_executable(${PROJECT_NAME}_test
 
 target_link_libraries(${PROJECT_NAME}_test ${PROJECT_NAME} ${GTEST_LIBRARIES} ${CERES_LIBRARIES} pthread)
 target_link_libraries(point_cloud_registration ${PROJECT_NAME} ${CERES_LIBRARIES} ${PCL_LIBRARIES})
-target_link_libraries(pso_registration ${CERES_LIBRARIES} ${PCL_LIBRARIES})
+target_link_libraries(pso_initial_guess ${CERES_LIBRARIES} ${PCL_LIBRARIES})
 target_link_libraries(metric_tester ${PCL_LIBRARIES})
 target_link_libraries(icp_registration ${PCL_LIBRARIES})
 target_link_libraries(obj_fun_analyzer ${PROJECT_NAME} ${CERES_LIBRARIES} ${PCL_LIBRARIES})

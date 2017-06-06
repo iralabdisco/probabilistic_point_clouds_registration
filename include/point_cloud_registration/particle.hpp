@@ -32,7 +32,6 @@ public:
 
         max_position_ << max_t.x, max_t.y, max_t.z, 360, 360, 360;
         min_position_ << min_t.x, min_t.y, min_t.z, 0, 0, 0;
-        std::cout << max_position_ << std::endl << min_position_ << std::endl;
         for (int i = 0; i < velocity_.size(); i++) {
             max_velocity_[i] = (max_position_[i] - min_position_[i]) / 4.0;
         }
