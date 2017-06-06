@@ -1,4 +1,5 @@
 build/*
 build-Release/*
 datasets/*
+datasets_bis/*
 CMakeLists.txt.user
