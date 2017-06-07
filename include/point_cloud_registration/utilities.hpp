@@ -72,7 +72,7 @@ inline double sumSquaredError(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud1,
     for (auto it = all_distances.begin(); it != all_distances.end(); it++) {
 
         if (*it <= median_distance * 3 && *it >= median_distance / 3) {
-            sum += (*it) * (*it);
+            sum += (*it);
             num_filtered++;
         }
     }
