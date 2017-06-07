@@ -17,28 +17,30 @@
 #include <tclap/CmdLine.h>
 
 #include "point_cloud_registration/utilities.hpp"
-#include "point_cloud_registration/particle.hpp"
-#include "point_cloud_registration/swarm.hpp"
+#include "point_cloud_registration/particle_parameters.hpp"
+#include "point_cloud_registration/swarm_parameters.hpp"
 
 
 
 typedef pcl::PointXYZ PointType;
 
-using point_cloud_registration::Particle;
-using point_cloud_registration::Swarm;
+using point_cloud_registration::ParticleParameters;
+using point_cloud_registration::SwarmParameters;
+using point_cloud_registration::PointCloudRegistrationParams;
 
 int main(int argc, char **argv)
 {
     std::string source_file_name;
     std::string target_file_name;
     std::string ground_truth_name;
+    PointCloudRegistrationParams params;
     bool ground_truth = false;
     int num_part = 0, num_gen = 0;
     double source_filter_size, target_filter_size;
     pcl::VoxelGrid<pcl::PointXYZ> voxel_filter;
 
     try {
-        TCLAP::CmdLine cmd("PSO Initial Guess", ' ', "1.0");
+        TCLAP::CmdLine cmd("PSO Parameters", ' ', "1.0");
         TCLAP::UnlabeledValueArg<std::string> source_file_name_arg("source_file_name",
                                                                    "The path of the source point cloud", true, "source_cloud.pcd", "string", cmd);
         TCLAP::UnlabeledValueArg<std::string> target_file_name_arg("target_file_name",
@@ -54,6 +56,16 @@ int main(int argc, char **argv)
         TCLAP::ValueArg<std::string> ground_truth_arg("g", "ground_truth",
                                                       "The path of the ground truth for the source cloud, if available", false, "ground_truth.pcd",
                                                       "string", cmd);
+        TCLAP::ValueArg<int> num_iter_arg("i", "num_iter",
+                                          "The maximum number of iterations to perform", false, 10, "int", cmd);
+        TCLAP::ValueArg<float> dof_arg("d", "dof", "The Degree of freedom of t-distribution", false, 5,
+                                       "float", cmd);
+        TCLAP::ValueArg<float> cost_drop_tresh_arg("c", "cost_drop_treshold",
+                                                   "If the cost_drop drops below this threshold for too many iterations, the algorithm terminate",
+                                                   false, 0.01, "float", cmd);
+        TCLAP::ValueArg<int> num_drop_iter_arg("n", "num_drop_iter",
+                                               "The maximum number of iterations during which the cost drop is allowed to be under cost_drop_thresh",
+                                               false, 5, "int", cmd);
         cmd.parse(argc, argv);
 
 
@@ -63,6 +75,13 @@ int main(int argc, char **argv)
         target_filter_size = target_filter_arg.getValue();
         num_part = num_part_arg.getValue();
         num_gen = num_gen_arg.getValue();
+
+        params.dof = dof_arg.getValue();
+        params.n_iter = num_iter_arg.getValue();
+        params.verbose = false;
+        params.cost_drop_thresh = cost_drop_tresh_arg.getValue();
+        params.n_cost_drop_it = num_drop_iter_arg.getValue();
+        params.summary = false;
 
         if (ground_truth_arg.isSet()) {
             ground_truth = true;
@@ -134,11 +153,11 @@ int main(int argc, char **argv)
                                                                                  0, 0);
     viewer.addPointCloud<pcl::PointXYZ> (ground_truth_cloud, truth_color, "groundTruth");
 
-    Swarm swarm;
+    SwarmParameters swarm;
     for (int i = 0; i < num_part; i++) {
-        swarm.add_particle(Particle(source_cloud, target_cloud, i));
+        swarm.add_particle(ParticleParameters(source_cloud, target_cloud, params, i));
     }
-    Particle best;
+    ParticleParameters best;
     swarm.init();
     std::cout << swarm << std::endl;
 
