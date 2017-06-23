@@ -61,3 +61,14 @@ legend([s4,s5,s6],{'SumSquaredErrors','Average','Median'});
 saveas(f2,strcat(name,'_multiple.png'));
 view([0,1]);
 saveas(f2,strcat(name,'_multiple_side.png'));
+
+printMinIndex(median);
+printMinIndex(average);
+printMinIndex(robust_sse);
+printMinIndex(robust_sse_avg);
+
+function [] = printMinIndex(matrix)
+[v,i] = min(matrix(:));
+[r,c] = ind2sub(size(matrix),i);
+disp([inputname(1),' ', num2str(r), ' ',num2str(c) ]);
+end
