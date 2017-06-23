@@ -101,7 +101,7 @@ public:
             }
         }
         if (valid) {
-            score_ =  - score();
+            score_ = score();
             if (score_ > best_score_) {
                 best_score_ = score_;
                 best_position_ = position_;
