@@ -26,6 +26,7 @@ typedef pcl::PointXYZ PointType;
 
 using point_cloud_registration::Particle;
 using point_cloud_registration::Swarm;
+using point_cloud_registration::calculateMSE;
 
 int main(int argc, char **argv)
 {
@@ -89,10 +90,14 @@ int main(int argc, char **argv)
         exit(EXIT_FAILURE);
     }
 
+ pcl::PointCloud<PointType>::Ptr filtered_source_cloud = boost::make_shared<pcl::PointCloud<PointType>>();
     if (source_filter_size != 0) {
         voxel_filter.setInputCloud(source_cloud);
         voxel_filter.setLeafSize(source_filter_size, source_filter_size, source_filter_size);
-        voxel_filter.filter(*source_cloud);
+        voxel_filter.filter(*filtered_source_cloud);
+    }
+    else{
+        *filtered_source_cloud = *source_cloud;
     }
 
     if (target_filter_size != 0) {
@@ -101,8 +106,8 @@ int main(int argc, char **argv)
         voxel_filter.filter(*target_cloud);
     }
 
-    pcl::PointCloud<PointType>::Ptr ground_truth_cloud =
-        boost::make_shared<pcl::PointCloud<PointType>>();
+    pcl::PointCloud<PointType>::Ptr ground_truth_cloud = boost::make_shared<pcl::PointCloud<PointType>>();
+    pcl::PointCloud<PointType>::Ptr filtered_ground_truth_cloud = boost::make_shared<pcl::PointCloud<PointType>>();
 
     if (ground_truth) {
         std::cout << "Loading ground truth point cloud from " << ground_truth_name << std::endl;
@@ -113,7 +118,9 @@ int main(int argc, char **argv)
             if (source_filter_size != 0) {
                 voxel_filter.setInputCloud(ground_truth_cloud);
                 voxel_filter.setLeafSize(source_filter_size, source_filter_size, source_filter_size);
-                voxel_filter.filter(*ground_truth_cloud);
+                voxel_filter.filter(*filtered_ground_truth_cloud);
+            }else{
+                *filtered_ground_truth_cloud = *ground_truth_cloud;
             }
         }
 
@@ -125,18 +132,18 @@ int main(int argc, char **argv)
                                                                                   0);
 
     viewer.addPointCloud<pcl::PointXYZ> (target_cloud, target_color, "target");
-    pcl::visualization::PointCloudColorHandlerCustom<pcl::PointXYZ> source_color (source_cloud, 0,
+    pcl::visualization::PointCloudColorHandlerCustom<pcl::PointXYZ> source_color (filtered_source_cloud, 0,
                                                                                   0, 255);
-    viewer.addPointCloud<pcl::PointXYZ> (source_cloud, source_color, "source");
+    viewer.addPointCloud<pcl::PointXYZ> (filtered_source_cloud, source_color, "source");
 
-    pcl::visualization::PointCloudColorHandlerCustom<pcl::PointXYZ> truth_color (ground_truth_cloud,
+    pcl::visualization::PointCloudColorHandlerCustom<pcl::PointXYZ> truth_color (filtered_ground_truth_cloud,
                                                                                  255,
                                                                                  0, 0);
-    viewer.addPointCloud<pcl::PointXYZ> (ground_truth_cloud, truth_color, "groundTruth");
+    viewer.addPointCloud<pcl::PointXYZ> (filtered_ground_truth_cloud, truth_color, "groundTruth");
 
     Swarm swarm;
     for (int i = 0; i < num_part; i++) {
-        swarm.add_particle(Particle(source_cloud, target_cloud, i));
+        swarm.add_particle(Particle(filtered_source_cloud, target_cloud, i));
     }
     Particle best;
     swarm.init();
@@ -149,7 +156,10 @@ int main(int argc, char **argv)
         viewer.updatePointCloudPose("source", best.getTransformation().cast<float>());
         viewer.spinOnce (1);
     }
+    viewer.spin();
     pcl::transformPointCloud (*source_cloud, *source_cloud, best.getTransformation());
     pcl::io::savePCDFile("output.pcd", *source_cloud);
+    double mse_gtruth = calculateMSE(source_cloud, ground_truth_cloud);
+std::cout<<"MSE Gtruth: "<<mse_gtruth<<std::endl;
     return 0;
 }
