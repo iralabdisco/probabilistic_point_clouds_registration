@@ -140,7 +140,7 @@ private:
     double score()
     {
         pcl::transformPointCloud (*source_cloud_, *moved_source_cloud_, getTransformation());
-        return -robustMedianClosestDistance(moved_source_cloud_, target_cloud_);
+        return -robustAveragedSumSquaredError(moved_source_cloud_, target_cloud_);
     }
 
     void evolve()
