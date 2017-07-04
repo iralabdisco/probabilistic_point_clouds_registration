@@ -126,20 +126,20 @@ int main(int argc, char **argv)
 
     }
 
-    pcl::visualization::PCLVisualizer viewer("PSO Viewer");
-    viewer.setBackgroundColor(255, 255, 255);
-    pcl::visualization::PointCloudColorHandlerCustom<pcl::PointXYZ> target_color (target_cloud, 0, 255,
-                                                                                  0);
+    // pcl::visualization::PCLVisualizer viewer("PSO Viewer");
+    // viewer.setBackgroundColor(255, 255, 255);
+    // pcl::visualization::PointCloudColorHandlerCustom<pcl::PointXYZ> target_color (target_cloud, 0, 255,
+    //                                                                               0);
 
-    viewer.addPointCloud<pcl::PointXYZ> (target_cloud, target_color, "target");
-    pcl::visualization::PointCloudColorHandlerCustom<pcl::PointXYZ> source_color (filtered_source_cloud, 0,
-                                                                                  0, 255);
-    viewer.addPointCloud<pcl::PointXYZ> (filtered_source_cloud, source_color, "source");
+    // viewer.addPointCloud<pcl::PointXYZ> (target_cloud, target_color, "target");
+    // pcl::visualization::PointCloudColorHandlerCustom<pcl::PointXYZ> source_color (filtered_source_cloud, 0,
+    //                                                                               0, 255);
+    // viewer.addPointCloud<pcl::PointXYZ> (filtered_source_cloud, source_color, "source");
 
-    pcl::visualization::PointCloudColorHandlerCustom<pcl::PointXYZ> truth_color (filtered_ground_truth_cloud,
-                                                                                 255,
-                                                                                 0, 0);
-    viewer.addPointCloud<pcl::PointXYZ> (filtered_ground_truth_cloud, truth_color, "groundTruth");
+    // pcl::visualization::PointCloudColorHandlerCustom<pcl::PointXYZ> truth_color (filtered_ground_truth_cloud,
+    //                                                                              255,
+    //                                                                              0, 0);
+    // viewer.addPointCloud<pcl::PointXYZ> (filtered_ground_truth_cloud, truth_color, "groundTruth");
 
     Swarm swarm;
     for (int i = 0; i < num_part; i++) {
@@ -147,19 +147,20 @@ int main(int argc, char **argv)
     }
     Particle best;
     swarm.init();
-    std::cout << swarm << std::endl;
+    // std::cout << swarm << std::endl;
 
     for (int i = 0; i < num_gen; i++) {
         swarm.evolve();
         best = swarm.getBest();
-        std::cout << swarm << std::endl;
-        viewer.updatePointCloudPose("source", best.getTransformation().cast<float>());
-        viewer.spinOnce (1);
+        // std::cout << swarm << std::endl;
+        // viewer.updatePointCloudPose("source", best.getTransformation().cast<float>());
+        // viewer.spinOnce (1);
     }
-    viewer.spin();
+    // viewer.spin();
     pcl::transformPointCloud (*source_cloud, *source_cloud, best.getTransformation());
-    pcl::io::savePCDFile("output.pcd", *source_cloud);
+    pcl::io::savePCDFile("guess_"+source_file_name, *source_cloud);
     double mse_gtruth = calculateMSE(source_cloud, ground_truth_cloud);
-std::cout<<"MSE Gtruth: "<<mse_gtruth<<std::endl;
+    std::cout<<"MSE Gtruth: "<<mse_gtruth<<std::endl;
+    std::cerr<<mse_gtruth<<std::endl;
     return 0;
 }
