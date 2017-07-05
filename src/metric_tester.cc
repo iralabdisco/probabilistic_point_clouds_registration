@@ -11,6 +11,7 @@
 #include <Eigen/Sparse>
 #include <pcl/common/pca.h>
 #include <pcl/common/transforms.h>
+#include <pcl/filters/voxel_grid.h>
 #include <pcl/io/pcd_io.h>
 #include <pcl/point_types.h>
 #include <tclap/CmdLine.h>
@@ -34,8 +35,11 @@ int main(int argc, char **argv)
     std::string target_cloud_file_name;
     std::string report_file_name;
     bool test_trans = false;
+    double source_filter_size, target_filter_size;
+    pcl::VoxelGrid<pcl::PointXYZ> voxel_filter;
 
-    try {
+    try
+    {
         TCLAP::CmdLine cmd("Metri tester", ' ', "1.0");
 
         TCLAP::UnlabeledValueArg<std::string> source_file_name_arg("source_file_name",
@@ -47,11 +51,17 @@ int main(int argc, char **argv)
         TCLAP::SwitchArg test_trans_arg("t", "trans",
                                         "Whether to the for the translation instead than rotation", cmd,
                                         false);
+        TCLAP::ValueArg<float> source_filter_arg("s", "source_filter_size",
+                                                 "The leaf size of the voxel filter of the source cloud", false, 0, "float", cmd);
+        TCLAP::ValueArg<float> target_filter_arg("t", "target_filter_size",
+                                                 "The leaf size of the voxel filter of the target cloud", false, 0, "float", cmd);
         cmd.parse(argc, argv);
         source_cloud_file_name = source_file_name_arg.getValue();
         target_cloud_file_name = target_file_name_arg.getValue();
         report_file_name = report_file_name_arg.getValue();
         test_trans = test_trans_arg.getValue();
+        source_filter_size = source_filter_arg.getValue();
+        target_filter_size = target_filter_arg.getValue();
     } catch (TCLAP::ArgException &e) {
         std::cerr << "error: " << e.error() << " for arg " << e.argId() << std::endl;
         exit(EXIT_FAILURE);
@@ -70,23 +80,37 @@ int main(int argc, char **argv)
         exit(EXIT_FAILURE);
     }
 
+    if (source_filter_size != 0)
+    {
+        voxel_filter.setInputCloud(source_cloud);
+        voxel_filter.setLeafSize(source_filter_size, source_filter_size, source_filter_size);
+        voxel_filter.filter(*source_cloud);
+    }
+
+    if (target_filter_size != 0)
+    {
+        voxel_filter.setInputCloud(target_cloud);
+        voxel_filter.setLeafSize(target_filter_size, target_filter_size, target_filter_size);
+        voxel_filter.filter(*target_cloud);
+    }
+
     std::ofstream report_file;
     report_file.open(report_file_name);
     report_file << "Source cloud: " << source_cloud_file_name << " Target cloud: " <<
                 target_cloud_file_name << std::endl;
     if (test_trans) {
         report_file <<
-                    "tx, ty, MSE_gtruth, MedianClosestDistance, AverageClosestDistance, sse, robustSSE, robustAvgSSE" <<
+                    "tx, ty, MSE_gtruth, MedianClosestDistance, RobustMedian, sse, robustSSE, robustAvgSSE" <<
                     std::endl;
     } else {
         report_file <<
-                    "Pitch, Yaw,  MSE_gtruth, MedianClosestDistance, AverageClosestDistance, sse, robustSSE, robustAvgSSE"
+                    "Pitch, Yaw,  MSE_gtruth, MedianClosestDistance, RobustMedian, sse, robustSSE, robustAvgSSE"
                     << std::endl;
     }
 
     if (test_trans) {
-        for (double tx = 0; tx <= 30; tx += 1) {
-            for (double ty = 0; ty <= 30; ty += 1) {
+        for (double tx = 0; tx <= 5; tx += 0.1) {
+            for (double ty = 0; ty <= 5; ty += 0.1) {
                 pcl::PointCloud<PointType>::Ptr moved_source_cloud =
                     boost::make_shared<pcl::PointCloud<PointType>>();
                 Eigen::Affine3d trans(Eigen::Affine3d::Identity());
@@ -96,12 +120,12 @@ int main(int argc, char **argv)
                 //            double mse_gtruth = calculateMSE(moved_source_cloud, target_cloud);
                 double mse_gtruth = 1;
                 double median_score = medianClosestDistance(moved_source_cloud, target_cloud);
-                double average_score = averageClosestDistance(moved_source_cloud, target_cloud);
+                double robust_median_score = robustMedianClosestDistance(moved_source_cloud, target_cloud);
                 double sse = sumSquaredError (moved_source_cloud, target_cloud);
                 double robustSse = robustSumSquaredError(moved_source_cloud, target_cloud);
                 double robustAveSSe = robustAveragedSumSquaredError(moved_source_cloud, target_cloud);
                 report_file << tx << ", " << ty << ", " << mse_gtruth << ", " << median_score << ", " <<
-                            average_score << ", " << sse <<  ", " << robustSse << ", " << robustAveSSe << std::endl;
+                            robust_median_score << ", " << sse <<  ", " << robustSse << ", " << robustAveSSe << std::endl;
             }
         }
     } else {
@@ -117,12 +141,12 @@ int main(int argc, char **argv)
 //            double mse_gtruth = calculateMSE(moved_source_cloud, target_cloud);
                 double mse_gtruth = 1;
                 double median_score = medianClosestDistance(moved_source_cloud, target_cloud);
-                double average_score = averageClosestDistance(moved_source_cloud, target_cloud);
+                double robust_median_score = robustMedianClosestDistance(moved_source_cloud, target_cloud);
                 double sse = sumSquaredError (moved_source_cloud, target_cloud);
                 double robustSse = robustSumSquaredError(moved_source_cloud, target_cloud);
                 double robustAveSSe = robustAveragedSumSquaredError(moved_source_cloud, target_cloud);
                 report_file << pitch << ", " << yaw << ", " << mse_gtruth << ", " << median_score << ", " <<
-                            average_score << ", " << sse <<  ", " << robustSse << ", " << robustAveSSe << std::endl;
+                            robust_median_score << ", " << sse <<  ", " << robustSse << ", " << robustAveSSe << std::endl;
             }
         }
 

@@ -18,6 +18,7 @@ cmd = cmd + '-trans ' + trans[0] + ',' + trans[1]+ ',' + trans[2] + ' '
 cmd = cmd + '-quat ' + rot[0] + ',' + rot [1] + ',' + rot[2] + ',' + rot[3]
 print cmd
 os.system(cmd)
-os.system('sed -e 9d '+file_name+' > tmp.pcd')
-os.system('cat tmp.pcd > '+file_name)
-os.system('rm tmp.pcd')
+os.system("sed -i '/^VIEWPOINT/d' "+file_name)
+# os.system('sed -e 9d '+file_name+' > tmp.pcd')
+# os.system('cat tmp.pcd > '+file_name)
+# os.system('rm tmp.pcd')

@@ -1,12 +1,19 @@
 [FileName,PathName] = uigetfile('*.txt');
 data = csvread(fullfile(PathName, FileName),2,0);
 
-sse = vec2mat(data(:,5),121);
-robust_sse = vec2mat(data(:,6),121);
-robust_sse_avg = vec2mat(data(:,7),121);
+num_data = 51;
+%x = [0:3:360];
+%y = [0:3:360];
 
-median = vec2mat(data(:,4),121);
-average = vec2mat(data(:,5),121);
+x = [0:0.1:5];
+y = [0:0.1:5];
+
+sse = vec2mat(data(:,5),num_data);
+robust_sse = vec2mat(data(:,6),num_data);
+robust_sse_avg = vec2mat(data(:,7),num_data);
+
+median = vec2mat(data(:,4),num_data);
+robust_median = vec2mat(data(:,5),num_data);
 
 max_v = max(sse(:));
 sse = sse/max_v;
@@ -20,18 +27,15 @@ robust_sse_avg = robust_sse_avg/max_v;
 max_v = max(median(:));
 median = median/max_v;
 
-max_v = max(average(:));
-average = average/max_v;
+max_v = max(robust_median(:));
+robust_median = robust_median/max_v;
 
-color1 = rand(121);
-color2 = rand(121);
-color3 = rand(121);
+color1 = rand(num_data);
+color2 = rand(num_data);
+color3 = rand(num_data);
 color1(:) = 255;
 color2(:) = 500;
 color3(:) = 100;
-
-x = [0:3:360];
-y = [0:3:360];
 
 colormap(jet);
 
@@ -53,17 +57,17 @@ f2 = figure('units','normalized','outerposition',[0 0 1 1]);
 
 s4 = surf(x,y,sse,color1);
 hold on;
-s5 = surf(x,y,average,color2);
+s5 = surf(x,y,robust_median,color2);
 hold on;
 s6 = surf(x,y,median, color3);
-legend([s4,s5,s6],{'SumSquaredErrors','Average','Median'});
+legend([s4,s5,s6],{'SumSquaredErrors','Robust Median','Median'});
 
 saveas(f2,strcat(name,'_multiple.png'));
 view([0,1]);
 saveas(f2,strcat(name,'_multiple_side.png'));
 
 printMinIndex(median);
-printMinIndex(average);
+printMinIndex(robust_median);
 printMinIndex(robust_sse);
 printMinIndex(robust_sse_avg);
 
