@@ -99,6 +99,43 @@ inline double robustSumSquaredError(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud1,
     return sum;
 }
 
+inline double robustSumSquaredError(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud1,
+                                    pcl::PointCloud<pcl::PointXYZ>::Ptr cloud2, double factor)
+{
+    double sum = 0;
+    double median_distance;
+    pcl::KdTreeFLANN<pcl::PointXYZ> kdtree;
+    kdtree.setInputCloud(cloud2);
+    std::vector<double> all_distances;
+    for (std::size_t i = 0; i < cloud1->size(); i++) {
+        std::vector<int> neighbours;
+        std::vector<float> distances;
+        neighbours.reserve(1);
+        distances.reserve(1);
+        kdtree.nearestKSearch(*cloud1, i, 1, neighbours, distances);
+        all_distances.push_back(distances[0]);
+    }
+
+    std::sort(all_distances.begin(), all_distances.end());
+    if (all_distances.size() % 2 != 0) {
+        median_distance = all_distances[(all_distances.size() + 1) / 2];
+    } else {
+        median_distance = (all_distances[all_distances.size() / 2] + all_distances[(all_distances.size() /
+                                                                                    2) + 1]) / 2.0;
+    }
+    int num_filtered = 0;
+    for (auto it = all_distances.begin(); it != all_distances.end(); it++) {
+        if (*it <= median_distance * factor && *it >= median_distance / factor) {
+            sum += (*it);
+            num_filtered++;
+        }
+    }
+    if (num_filtered < 10) {
+        return std::numeric_limits<double>::max();
+    }
+    return sum;
+}
+
 inline double robustAveragedSumSquaredError(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud1,
                                             pcl::PointCloud<pcl::PointXYZ>::Ptr cloud2)
 {

@@ -169,10 +169,13 @@ if(display){
     {
         viewer.spin();
     }
-    pcl::transformPointCloud (*source_cloud, *source_cloud, best.getTransformation());
-    pcl::io::savePCDFile("guess_"+source_file_name, *source_cloud);
-    double mse_gtruth = calculateMSE(source_cloud, ground_truth_cloud);
-    std::cout<<"MSE Gtruth: "<<mse_gtruth<<std::endl;
-    std::cerr<<mse_gtruth<<std::endl;
+    pcl::transformPointCloud(*source_cloud, *source_cloud, best.getTransformation());
+    pcl::io::savePCDFile("guess_" + source_file_name, *source_cloud);
+    if (ground_truth)
+    {
+        double mse_gtruth = calculateMSE(source_cloud, ground_truth_cloud);
+        std::cout << "MSE Gtruth: " << mse_gtruth << std::endl;
+        std::cerr << source_file_name << " , " <<mse_gtruth << std::endl;
+    }
     return 0;
 }

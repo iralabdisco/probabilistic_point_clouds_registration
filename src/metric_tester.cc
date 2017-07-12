@@ -48,7 +48,7 @@ int main(int argc, char **argv)
                                                                    "The path of the target point cloud", true, "target_cloud.pcd", "string", cmd);
         TCLAP::UnlabeledValueArg<std::string> report_file_name_arg("report_file_name",
                                                                    "The name of the report file", true, "report.pcd", "string", cmd);
-        TCLAP::SwitchArg test_trans_arg("t", "trans",
+        TCLAP::SwitchArg test_trans_arg("", "trans",
                                         "Whether to the for the translation instead than rotation", cmd,
                                         false);
         TCLAP::ValueArg<float> source_filter_arg("s", "source_filter_size",
@@ -103,9 +103,9 @@ int main(int argc, char **argv)
                     "tx, ty, MSE_gtruth, MedianClosestDistance, RobustMedian, sse, robustSSE, robustAvgSSE" <<
                     std::endl;
     } else {
-        report_file <<
-                    "Pitch, Yaw,  MSE_gtruth, MedianClosestDistance, RobustMedian, sse, robustSSE, robustAvgSSE"
-                    << std::endl;
+        // report_file <<
+                    // "Pitch, Yaw,  MSE_gtruth, MedianClosestDistance, RobustMedian, sse, robustSSE, robustAvgSSE"
+                    // << std::endl;
     }
 
     if (test_trans) {
@@ -129,25 +129,34 @@ int main(int argc, char **argv)
             }
         }
     } else {
-        for (double pitch = 0; pitch <= 360; pitch += 3) {
-            for (double yaw = 0; yaw <= 360; yaw += 3) {
+        for (double pitch = 0; pitch <= 360; pitch += 1) {
+            // for (double yaw = 0; yaw <= 360; yaw += 3) {
+                double yaw = 0;
                 pcl::PointCloud<PointType>::Ptr moved_source_cloud =
                     boost::make_shared<pcl::PointCloud<PointType>>();
                 Eigen::Affine3d trans(Eigen::Affine3d::Identity());
-                trans.rotate(point_cloud_registration::euler2Quaternion(0, pitch * 0.0174533, yaw * 0.0174533));
+                // trans.rotate(point_cloud_registration::euler2Quaternion(0, pitch * 0.0174533, yaw * 0.0174533));
+                trans.rotate(Eigen::AngleAxisd(pitch * 0.0174533, Eigen::Vector3d(0,1,1)));
 
                 pcl::transformPointCloud (*source_cloud, *moved_source_cloud, trans);
 
 //            double mse_gtruth = calculateMSE(moved_source_cloud, target_cloud);
-                double mse_gtruth = 1;
-                double median_score = medianClosestDistance(moved_source_cloud, target_cloud);
-                double robust_median_score = robustMedianClosestDistance(moved_source_cloud, target_cloud);
-                double sse = sumSquaredError (moved_source_cloud, target_cloud);
-                double robustSse = robustSumSquaredError(moved_source_cloud, target_cloud);
-                double robustAveSSe = robustAveragedSumSquaredError(moved_source_cloud, target_cloud);
-                report_file << pitch << ", " << yaw << ", " << mse_gtruth << ", " << median_score << ", " <<
-                            robust_median_score << ", " << sse <<  ", " << robustSse << ", " << robustAveSSe << std::endl;
-            }
+                // double mse_gtruth = 1;
+                // double median_score = medianClosestDistance(moved_source_cloud, target_cloud);
+                // double robust_median_score = robustMedianClosestDistance(moved_source_cloud, target_cloud);
+                // double sse = sumSquaredError (moved_source_cloud, target_cloud);
+                // double robustSse = robustSumSquaredError(moved_source_cloud, target_cloud);
+                // double robustAveSSe = robustAveragedSumSquaredError(moved_source_cloud, target_cloud);
+                
+                report_file << pitch<<" , ";
+
+                for(int i =2;i<=6;i++){
+                    report_file << robustSumSquaredError(moved_source_cloud, target_cloud,i)<<" , ";
+                }
+                report_file<<std::endl;
+                // report_file << pitch << ", " << yaw << ", " << mse_gtruth << ", " << median_score << ", " <<
+                //             robust_median_score << ", " << sse <<  ", " << robustSse << ", " << robustAveSSe << std::endl;
+            // }
         }
 
     }

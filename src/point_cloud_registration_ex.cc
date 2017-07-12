@@ -193,5 +193,10 @@ int main(int argc, char **argv)
                     params.cost_drop_thresh << " | N_cost_drop_it: " << params.n_cost_drop_it << std::endl;
         report_file << registration->report();
     }
+   if (ground_truth)
+    {
+        double mse_gtruth = point_cloud_registration::calculateMSE(aligned_source, source_ground_truth);
+        std::cerr <<mse_gtruth << std::endl;
+    }
     return 0;
 }

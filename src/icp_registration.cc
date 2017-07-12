@@ -10,6 +10,8 @@
 #include <pcl/point_types.h>
 #include <tclap/CmdLine.h>
 
+#include "point_cloud_registration/utilities.hpp"
+
 typedef pcl::PointXYZ PointType;
 
 int main(int argc, char **argv)
@@ -114,7 +116,7 @@ int main(int argc, char **argv)
     }
 
     icp->setMaxCorrespondenceDistance(radius);
-    icp->setMaximumIterations(std::numeric_limits<int>::max());
+    icp->setMaximumIterations(100);
     icp->setInputSource(filtered_source_cloud);
     icp->setInputTarget(target_cloud);
     pcl::PointCloud<PointType>::Ptr aligned_source = boost::make_shared<pcl::PointCloud<PointType>>();
@@ -124,22 +126,11 @@ int main(int argc, char **argv)
     pcl::transformPointCloud (*source_cloud, *aligned_source, icp->getFinalTransformation());
 
     if (ground_truth) {
-        double mean_error_after = 0;
-        double mean_error_before = 0;
-        for (std::size_t i = 0; i < source_ground_truth->size(); ++i) {
-            double error_after = std::sqrt(std::pow(source_ground_truth->at(i).x - aligned_source->at(i).x, 2) +
-                                           std::pow(source_ground_truth->at(i).y - aligned_source->at(i).y, 2) +
-                                           std::pow(source_ground_truth->at(i).z - aligned_source->at(i).z, 2));
-            double error_before = std::sqrt(std::pow(source_ground_truth->at(i).x - source_cloud->at(i).x, 2) +
-                                            std::pow(source_ground_truth->at(i).y - source_cloud->at(i).y, 2) +
-                                            std::pow(source_ground_truth->at(i).z - source_cloud->at(i).z, 2));
-            mean_error_after += error_after;
-            mean_error_before += error_before;
-        }
-        mean_error_after /= source_ground_truth->size();
-        mean_error_before /= source_ground_truth->size();
+        double mean_error_before = point_cloud_registration::calculateMSE(source_ground_truth, source_cloud);
+        double mean_error_after = point_cloud_registration::calculateMSE(source_ground_truth, aligned_source);
         std::cout << "Mean error before alignment: " << mean_error_before << std::endl;
         std::cout << "Mean error after alignment: " << mean_error_after << std::endl;
+        std::cerr <<  target_filter_size << " , "<<mean_error_after << std::endl;
     }
 
     std::string aligned_source_name = "aligned_" + source_file_name;
