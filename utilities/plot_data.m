@@ -1,9 +1,9 @@
 [FileName,PathName] = uigetfile('*.txt');
-data = csvread(r,5,0);
+data = csvread(fullfile(PathName, FileName),5,0);
 
 subplot(3,2,1)
 plot(data(:,1),data(:,2))
-ylabel('N success steps')
+ylabel('N succ. steps')
 
 subplot(3,2,2)
 yyaxis left
@@ -18,27 +18,41 @@ drop = data(:,3) - data(:,4);
 plot(data(:,1),drop)
 ylabel('Cost drop')
 
+% subplot(3,2,4)
+% plot(data(:,1),data(:,5))
+% hold on;
+% plot(data(:,1),data(:,6))
+% hold on;
+% plot(data(:,1),data(:,7))
+% ylabel('Translation')
+% 
+% subplot(3,2,5)
+% plot(data(:,1),data(:,8))
+% hold on;
+% plot(data(:,1),data(:,9))
+% hold on;
+% plot(data(:,1),data(:,10))
+% hold on;
+% ylabel('Rotation')
+
 subplot(3,2,4)
-plot(data(:,1),data(:,5))
-hold on;
-plot(data(:,1),data(:,6))
-hold on;
-plot(data(:,1),data(:,7))
-ylabel('Translation')
-
-subplot(3,2,5)
-plot(data(:,1),data(:,8))
-hold on;
-plot(data(:,1),data(:,9))
-hold on;
-plot(data(:,1),data(:,10))
-hold on;
-ylabel('Rotation')
-
-subplot(3,2,6)
 yyaxis left;
 plot(data(:,1),data(:,11))
-ylabel('MSE previous')
+ylabel('MSE previous iter.')
 yyaxis right;
 plot(data(:,1),data(:,12))
 ylabel('MSE gtruth')
+
+subplot(3,2,5)
+plot(diff(drop))
+ylabel('Derivative of cost drop')
+
+subplot(3,2,6)
+yyaxis left;
+plot(diff(data(:,11)))
+ylabel('Derivative of MSE prev. iter.')
+yyaxis right;
+plot(diff(data(:,12)))
+ylabel('Derivative of MSE gtruth')
+
+

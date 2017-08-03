@@ -1,12 +1,12 @@
 [FileName,PathName] = uigetfile('*.txt');
 data = csvread(fullfile(PathName, FileName),2,0);
 
-num_data = 121;
-x = [0:3:360];
-y = [0:3:360];
+num_data = 31;
+%x = [0:3:360];
+%y = [0:3:360];
 
-%x = [0:0.1:5];
-%y = [0:0.1:5];
+x = [0:1:30];
+y = [0:1:30];
 
 sse = vec2mat(data(:,5),num_data);
 robust_sse = vec2mat(data(:,6),num_data);

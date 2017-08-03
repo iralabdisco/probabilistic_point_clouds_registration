@@ -15,15 +15,15 @@ with open(input_file_name, 'r') as csvfile:
         if header:
             header = False
         else:
-            points.append([float(row[1]),float(row[2]),float(row[3]),float(row[4])])
+            points.append([float(row[0]),float(row[1]),float(row[2])])
 out_file_name = input_file_name[:-3]+"pcd"
 out_file = open(out_file_name, "w")
 width = "WIDTH"
 header = ("VERSION .7\n"
-          "FIELDS x y z intensity\n"
-          "SIZE 4 4 4 4\n"
-          "TYPE F F F F\n"
-          "COUNT 1 1 1 1\n" +
+          "FIELDS x y z\n"
+          "SIZE 4 4 4\n"
+          "TYPE F F F\n"
+          "COUNT 1 1 1\n" +
           "WIDTH " + str(len(points)) + "\n" +
           "HEIGHT 1\n"
           "VIEWPOINT 0 0 0 1 0 0 0\n"

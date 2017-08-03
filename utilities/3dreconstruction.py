@@ -11,12 +11,12 @@ files.sort()
 for cloud in files:
     #initial guess
     cmd = "../../build-Release/pso_initial_guess "
-    cmd = cmd + cloud + " output.pcd -p 100 -s 1 -t 1 -e 1000 -g " + cloud[:-4] + "_gtruth.pcd"
+    cmd = cmd + cloud + " output.pcd -p 100 -s 0.3 -t 0.3 -e 500 -v -g " + cloud[:-4] + "_gtruth.pcd"
     print cmd
     os.system(cmd)
 
     cmd = "../../build-Release/point_cloud_registration guess_"
-    cmd = cmd + cloud + " output.pcd -m 10 -r 4 -v -s 1 -t 1 -g "
+    cmd = cmd + cloud + " output.pcd -m 15 -r 4 -v -s 0.1 -t 0.1 -g "
     cmd = cmd + cloud[:-4] + '_gtruth.pcd '
     print cmd
     os.system(cmd)
