@@ -3,10 +3,10 @@
 
 namespace point_cloud_registration {
 struct PointCloudRegistrationParams {
-    int max_neighbours;
+    int max_neighbours = 20;
     double dof = 5;
     double radius = 1;
-    int n_iter = 10;
+    int n_iter = 1000;
     double cost_drop_thresh = 0.01;
     double n_cost_drop_it = 5;
     bool verbose = false;

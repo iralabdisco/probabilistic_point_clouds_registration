@@ -40,9 +40,9 @@ int main(int argc, char **argv)
         TCLAP::ValueArg<float> target_filter_arg("t", "target_filter_size",
                                                  "The leaf size of the voxel filter of the target cloud", false, 0, "float", cmd);
         TCLAP::ValueArg<int> max_neighbours_arg("m", "max_neighbours",
-                                                "The max cardinality of the neighbours' set", false, 10, "int", cmd);
+                                                "The max cardinality of the neighbours' set", false, 20, "int", cmd);
         TCLAP::ValueArg<int> num_iter_arg("i", "num_iter",
-                                          "The maximum number of iterations to perform", false, 10, "int", cmd);
+                                          "The maximum number of iterations to perform", false, 1000, "int", cmd);
         TCLAP::ValueArg<float> dof_arg("d", "dof", "The Degree of freedom of t-distribution", false, 5,
                                        "float", cmd);
         TCLAP::ValueArg<float> radius_arg("r", "radius", "The radius of the neighborhood search", false, 3,
