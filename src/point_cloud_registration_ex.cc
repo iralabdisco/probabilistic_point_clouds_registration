@@ -28,7 +28,6 @@ int main(int argc, char **argv)
     std::string target_file_name;
     std::string ground_truth_file_name;
     PointCloudRegistrationParams params;
-    Eigen::Affine3d initial_guess(Eigen::Affine3d::Identity());
     try {
         TCLAP::CmdLine cmd("Probabilistic point cloud registration", ' ', "1.0");
         TCLAP::UnlabeledValueArg<std::string> source_file_name_arg("source_file_name",
@@ -47,14 +46,6 @@ int main(int argc, char **argv)
                                        "float", cmd);
         TCLAP::ValueArg<float> radius_arg("r", "radius", "The radius of the neighborhood search", false, 3,
                                           "float", cmd);
-        TCLAP::ValueArg<float> tx_arg("", "tx", "tx", false, 0, "float", cmd);
-        TCLAP::ValueArg<float> ty_arg("", "ty", "ty", false, 0, "float", cmd);
-        TCLAP::ValueArg<float> tz_arg("", "tz", "tz", false, 0, "float", cmd);
-
-        TCLAP::ValueArg<float> roll_arg("", "roll", "roll", false, 0, "float", cmd);
-        TCLAP::ValueArg<float> pitch_arg("", "pitch", "pitch", false, 0, "float", cmd);
-        TCLAP::ValueArg<float> yaw_arg("", "yaw", "yaw", false, 0, "float", cmd);
-
         TCLAP::ValueArg<float> cost_drop_tresh_arg("c", "cost_drop_treshold",
                                                    "If the cost_drop drops below this threshold for too many iterations, the algorithm terminate",
                                                    false, 0.01, "float", cmd);
@@ -85,13 +76,6 @@ int main(int argc, char **argv)
         target_file_name = target_file_name_arg.getValue();
         params.source_filter_size = source_filter_arg.getValue();
         params.target_filter_size = target_filter_arg.getValue();
-
-        if (tx_arg.isSet()) {
-            initial_guess.translate(Eigen::Vector3d(tx_arg.getValue(), ty_arg.getValue(), tz_arg.getValue()));
-            initial_guess.rotate(point_cloud_registration::euler2Quaternion(roll_arg.getValue() * 0.0174533,
-                                                                            pitch_arg.getValue() * 0.0174533,
-                                                                            yaw_arg.getValue() * 0.0174533));
-        }
 
         if (ground_truth_arg.isSet()) {
             ground_truth = true;
@@ -128,7 +112,6 @@ int main(int argc, char **argv)
         std::cout << "Could not load source cloud, closing" << std::endl;
         exit(EXIT_FAILURE);
     }
-    pcl::transformPointCloud (*source_cloud, *source_cloud, initial_guess);
 
     if (params.verbose) {
         std::cout << "Loading target point cloud from " << target_file_name << std::endl;
