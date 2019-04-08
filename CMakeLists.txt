@@ -13,7 +13,7 @@ ENDFOREACH()
 add_custom_target(dummy_${PROJECT_NAME} SOURCES ${extra_files})
 
 find_package(Boost REQUIRED)
-find_package(PCL 1.8 REQUIRED)
+find_package(PCL 1.7 REQUIRED)
 find_package(Ceres REQUIRED)
 find_package(GTest REQUIRED)
 
@@ -73,3 +73,8 @@ target_link_libraries(metric_tester ${PCL_LIBRARIES})
 target_link_libraries(icp_registration ${PCL_LIBRARIES})
 target_link_libraries(obj_fun_analyzer ${PROJECT_NAME} ${CERES_LIBRARIES} ${PCL_LIBRARIES})
 
+install(TARGETS ${PROJECT_NAME} DESTINATION lib)
+install(FILES include/point_cloud_registration/point_cloud_registration_params.hpp
+  include/point_cloud_registration/point_cloud_registration.h
+  include/point_cloud_registration/output_stream.hpp
+  include/point_cloud_registration/point_cloud_registration_iteration.hpp DESTINATION include)

@@ -116,7 +116,7 @@ int main(int argc, char **argv)
     }
 
     icp->setMaxCorrespondenceDistance(radius);
-    icp->setMaximumIterations(100);
+    icp->setMaximumIterations(10);
     icp->setInputSource(filtered_source_cloud);
     icp->setInputTarget(target_cloud);
     pcl::PointCloud<PointType>::Ptr aligned_source = boost::make_shared<pcl::PointCloud<PointType>>();
@@ -130,12 +130,15 @@ int main(int argc, char **argv)
         double mean_error_after = point_cloud_registration::calculateMSE(source_ground_truth, aligned_source);
         std::cout << "Mean error before alignment: " << mean_error_before << std::endl;
         std::cout << "Mean error after alignment: " << mean_error_after << std::endl;
-        std::cerr <<  target_filter_size << " , "<<mean_error_after << std::endl;
+        // std::cerr <<  target_filter_size << " , "<<mean_error_after << std::endl;
     }
+    double registration_distance = point_cloud_registration::calculateMSE(source_cloud, aligned_source);
+    std::cout << "Registration distance: " << registration_distance << std::endl;
 
     std::string aligned_source_name = "aligned_" + source_file_name;
     std::cout << "Saving aligned source cloud to: " << aligned_source_name.c_str() << std::endl;
-    pcl::io::savePCDFile(aligned_source_name, *aligned_source);
+    pcl::io::savePCDFile(aligned_source_name.c_str(), *aligned_source);
+    // std::cout<<icp->getFitnessScore(radius)<<std::endl;
 
     return 0;
 }
