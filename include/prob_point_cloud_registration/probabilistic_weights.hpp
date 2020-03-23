@@ -1,5 +1,5 @@
-#ifndef POINT_CLOUD_REGISTRATION_PROBABILISTIC_WEIGHTS_H
-#define POINT_CLOUD_REGISTRATION_PROBABILISTIC_WEIGHTS_H
+#ifndef PROB_POINT_CLOUD_REGISTRATION_PROBABILISTIC_WEIGHTS_HPP
+#define PROB_POINT_CLOUD_REGISTRATION_PROBABILISTIC_WEIGHTS_HPP
 
 #include <Eigen/Sparse>
 
@@ -8,7 +8,7 @@
 #include <limits>
 #include <vector>
 
-namespace point_cloud_registration {
+namespace prob_point_cloud_registration {
 
 inline double pi()
 {
@@ -104,6 +104,6 @@ public:
         return weights;
     }
 };
-}  // namespace point_cloud_registration
+}  // namespace prob_point_cloud_registration
 
 #endif

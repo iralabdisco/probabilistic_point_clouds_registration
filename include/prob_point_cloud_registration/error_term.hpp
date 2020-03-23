@@ -1,12 +1,12 @@
-#ifndef INCLUDE_POINT_CLOUD_REGISTRATION_REPROJECTION_ERROR_H
-#define INCLUDE_POINT_CLOUD_REGISTRATION_REPROJECTION_ERROR_H
+#ifndef PROB_POINT_CLOUD_REGISTRATION_REPROJECTION_ERROR_HPP
+#define PROB_POINT_CLOUD_REGISTRATION_REPROJECTION_ERROR_HPP
 
 #include <ceres/ceres.h>
 #include <ceres/rotation.h>
 #include <Eigen/Core>
 #include <pcl/point_types.h>
 
-namespace point_cloud_registration {
+namespace prob_point_cloud_registration {
 class ErrorTerm {
  public:
   static const int kResiduals = 3;
@@ -49,5 +49,5 @@ class ErrorTerm {
   Eigen::Vector3d target_point_;
   ceres::LossFunctionWrapper* weight_;
 };
-}  // namespace point_cloud_registration
-#endif  // INCLUDE_POINT_CLOUD_REGISTRATION_REPROJECTION_ERROR_H_
+}  // namespace prob_point_cloud_registration
+#endif  // PROB_POINT_CLOUD_REGISTRATION_REPROJECTION_ERROR_HPP

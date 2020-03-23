@@ -1,5 +1,5 @@
-#ifndef POINT_CLOUD_REGISTRATION_POINT_CLOUD_REGISTRATION_ITERATION_H
-#define POINT_CLOUD_REGISTRATION_POINT_CLOUD_REGISTRATION_ITERATION_H
+#ifndef PROB_POINT_CLOUD_REGISTRATION_POINT_CLOUD_REGISTRATION_ITERATION_HPP
+#define PROB_POINT_CLOUD_REGISTRATION_POINT_CLOUD_REGISTRATION_ITERATION_HPP
 
 #include <ceres/ceres.h>
 #include <Eigen/Core>
@@ -9,22 +9,22 @@
 
 #include <vector>
 
-#include "point_cloud_registration/error_term.hpp"
-#include "point_cloud_registration/probabilistic_weights.hpp"
-#include "point_cloud_registration/weight_updater_callback.hpp"
-#include "point_cloud_registration/point_cloud_registration_params.hpp"
+#include "prob_point_cloud_registration/error_term.hpp"
+#include "prob_point_cloud_registration/probabilistic_weights.hpp"
+#include "prob_point_cloud_registration/weight_updater_callback.hpp"
+#include "prob_point_cloud_registration/prob_point_cloud_registration_params.hpp"
 
 #define DIMENSIONS 3
 
-namespace point_cloud_registration {
+namespace prob_point_cloud_registration {
 
-class PointCloudRegistrationIteration
+class ProbPointCloudRegistrationIteration
 {
 public:
-    PointCloudRegistrationIteration(const pcl::PointCloud<pcl::PointXYZ> &source_cloud,
+    ProbPointCloudRegistrationIteration(const pcl::PointCloud<pcl::PointXYZ> &source_cloud,
                                     const pcl::PointCloud<pcl::PointXYZ> &target_cloud,
                                     const Eigen::SparseMatrix<double, Eigen::RowMajor> &data_association,
-                                    PointCloudRegistrationParams parameters)
+                                    ProbPointCloudRegistrationParams parameters)
         : error_terms_(), data_association_(data_association), parameters_(parameters),
           weight_updater_(parameters.dof, DIMENSIONS, parameters.max_neighbours)
     {
@@ -72,11 +72,11 @@ private:
     double rotation_[4];
     double translation_[3];
     Eigen::SparseMatrix<double, Eigen::RowMajor> data_association_;
-    PointCloudRegistrationParams parameters_;
+    ProbPointCloudRegistrationParams parameters_;
     ProbabilisticWeights weight_updater_;
     std::unique_ptr<WeightUpdaterCallback> weight_updater_callback_;
 };
 
-}  // namespace point_cloud_registration
+}  // namespace prob_point_cloud_registration
 
 #endif

@@ -1,9 +1,9 @@
-#ifndef POINT_CLOUD_REGISTRATION_OUTPUT_STREAM_HPP
-#define POINT_CLOUD_REGISTRATION_OUTPUT_STREAM_HPP
+#ifndef PROB_POINT_CLOUD_REGISTRATION_OUTPUT_STREAM_HPP
+#define PROB_POINT_CLOUD_REGISTRATION_OUTPUT_STREAM_HPP
 
 #include <iostream>
 
-namespace point_cloud_registration {
+namespace prob_point_cloud_registration {
 class OutputStream
 {
 private:
@@ -21,6 +21,6 @@ public:
 
     }
 };
-} // namespace point_cloud_registration
+} // namespace prob_point_cloud_registration
 
 #endif

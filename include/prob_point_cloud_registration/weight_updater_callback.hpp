@@ -1,5 +1,5 @@
-#ifndef POINT_CLOUD_REGISTRATION_WEIGHT_UPDATER_CALLBACK_H
-#define POINT_CLOUD_REGISTRATION_WEIGHT_UPDATER_CALLBACK_H
+#ifndef PROB_POINT_CLOUD_REGISTRATION_WEIGHT_UPDATER_CALLBACK_HPP
+#define PROB_POINT_CLOUD_REGISTRATION_WEIGHT_UPDATER_CALLBACK_HPP
 
 #include <ceres/ceres.h>
 #include <Eigen/Core>
@@ -7,17 +7,17 @@
 
 #include <vector>
 
-#include "point_cloud_registration/error_term.hpp"
-#include "point_cloud_registration/point_cloud_registration_params.hpp"
+#include "prob_point_cloud_registration/error_term.hpp"
+#include "prob_point_cloud_registration/prob_point_cloud_registration_params.hpp"
 
-namespace point_cloud_registration {
+namespace prob_point_cloud_registration {
 
 class WeightUpdaterCallback : public ceres::IterationCallback
 {
 
 private:
     Eigen::SparseMatrix<double, Eigen::RowMajor> *data_association_;
-    PointCloudRegistrationParams *params_;
+    ProbPointCloudRegistrationParams *params_;
     std::vector<ErrorTerm *> *error_terms_;
     ProbabilisticWeights *weight_updater_;
     double *rotation_;
@@ -25,7 +25,7 @@ private:
 
 public:
     WeightUpdaterCallback(Eigen::SparseMatrix<double, Eigen::RowMajor> *data_association,
-                          PointCloudRegistrationParams *params,
+                          ProbPointCloudRegistrationParams *params,
                           std::vector<ErrorTerm *> *error_terms, ProbabilisticWeights *weight_updater, double rotation[4],
                           double translation[3]):
         data_association_(data_association), params_(params), error_terms_(error_terms),
@@ -63,6 +63,6 @@ public:
     }
 };
 
-}  // namespace point_cloud_registration
+}  // namespace prob_point_cloud_registration
 
 #endif

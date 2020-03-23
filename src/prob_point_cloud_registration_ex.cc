@@ -14,14 +14,14 @@
 #include <pcl/point_types.h>
 #include <tclap/CmdLine.h>
 
-#include "point_cloud_registration/point_cloud_registration.h"
-#include "point_cloud_registration/utilities.hpp"
+#include "prob_point_cloud_registration/prob_point_cloud_registration.h"
+#include "prob_point_cloud_registration/utilities.hpp"
 
 
 typedef pcl::PointXYZ PointType;
 
-using point_cloud_registration::PointCloudRegistration;
-using point_cloud_registration::PointCloudRegistrationParams;
+using prob_point_cloud_registration::ProbPointCloudRegistration;
+using prob_point_cloud_registration::ProbPointCloudRegistrationParams;
 
 int main(int argc, char **argv)
 {
@@ -29,7 +29,7 @@ int main(int argc, char **argv)
     std::string source_file_name;
     std::string target_file_name;
     std::string ground_truth_file_name;
-    PointCloudRegistrationParams params;
+    ProbPointCloudRegistrationParams params;
     try {
         TCLAP::CmdLine cmd("Probabilistic point cloud registration", ' ', "1.0");
         TCLAP::UnlabeledValueArg<std::string> source_file_name_arg("source_file_name",
@@ -135,12 +135,12 @@ int main(int argc, char **argv)
         }
     }
 
-    std::unique_ptr<PointCloudRegistration> registration;
+    std::unique_ptr<ProbPointCloudRegistration> registration;
     if (ground_truth) {
-        registration = std::make_unique<PointCloudRegistration>(source_cloud, target_cloud, params,
+        registration = std::make_unique<ProbPointCloudRegistration>(source_cloud, target_cloud, params,
                                                                 source_ground_truth);
     } else {
-        registration = std::make_unique<PointCloudRegistration>(source_cloud, target_cloud,
+        registration = std::make_unique<ProbPointCloudRegistration>(source_cloud, target_cloud,
                                                                 params);
     }
     if (params.verbose) {
@@ -183,7 +183,7 @@ int main(int argc, char **argv)
     }
    if (ground_truth)
     {
-        double mse_gtruth = point_cloud_registration::calculateMSE(aligned_source, source_ground_truth);
+        double mse_gtruth = prob_point_cloud_registration::calculateMSE(aligned_source, source_ground_truth);
         std::cout <<"MSE w.r.t. ground truth: "<<mse_gtruth << std::endl;
     }
     return 0;

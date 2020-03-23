@@ -1,8 +1,8 @@
-#ifndef POINT_CLOUD_REGISTRATION_POINT_CLOUD_REGISTRATION_PARAMS_H
-#define POINT_CLOUD_REGISTRATION_POINT_CLOUD_REGISTRATION_PARAMS_H
+#ifndef PROB_POINT_CLOUD_REGISTRATION_POINT_CLOUD_REGISTRATION_PARAMS_HPP
+#define PROB_POINT_CLOUD_REGISTRATION_POINT_CLOUD_REGISTRATION_PARAMS_HPP
 
-namespace point_cloud_registration {
-struct PointCloudRegistrationParams {
+namespace prob_point_cloud_registration {
+struct ProbPointCloudRegistrationParams {
     int max_neighbours = 20;
     double dof = 5;
     double radius = 1;

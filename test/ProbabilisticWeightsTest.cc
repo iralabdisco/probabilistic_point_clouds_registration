@@ -3,9 +3,9 @@
 #include <Eigen/Sparse>
 #include <Eigen/Core>
 #include <gtest/gtest.h>
-#include "point_cloud_registration/probabilistic_weights.hpp"
+#include "prob_point_cloud_registration/probabilistic_weights.hpp"
 
-using point_cloud_registration::ProbabilisticWeights;
+using prob_point_cloud_registration::ProbabilisticWeights;
 
 std::vector<double> squaredErrors()
 {

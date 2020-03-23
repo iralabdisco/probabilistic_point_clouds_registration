@@ -1,5 +1,5 @@
-#ifndef POINT_CLOUD_REGISTRATION_POINT_CLOUD_REGISTRATION_H
-#define POINT_CLOUD_REGISTRATION_POINT_CLOUD_REGISTRATION_H
+#ifndef PROB_POINT_CLOUD_REGISTRATION_POINT_CLOUD_REGISTRATION_HPP
+#define PROB_POINT_CLOUD_REGISTRATION_POINT_CLOUD_REGISTRATION_HPP
 
 #include <sstream>
 
@@ -9,23 +9,23 @@
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
 
-#include "point_cloud_registration/output_stream.hpp"
-#include "point_cloud_registration/point_cloud_registration_iteration.hpp"
-#include "point_cloud_registration/point_cloud_registration_params.hpp"
+#include "prob_point_cloud_registration/output_stream.hpp"
+#include "prob_point_cloud_registration/prob_point_cloud_registration_iteration.hpp"
+#include "prob_point_cloud_registration/prob_point_cloud_registration_params.hpp"
 
-namespace point_cloud_registration {
+namespace prob_point_cloud_registration {
 
-class PointCloudRegistration
+class ProbPointCloudRegistration
 {
 public:
-    PointCloudRegistration(
+    ProbPointCloudRegistration(
         pcl::PointCloud<pcl::PointXYZ>::Ptr source_cloud,
         pcl::PointCloud<pcl::PointXYZ>::Ptr target_cloud,
-        PointCloudRegistrationParams parameters);
-    PointCloudRegistration(
+        ProbPointCloudRegistrationParams parameters);
+    ProbPointCloudRegistration(
         pcl::PointCloud<pcl::PointXYZ>::Ptr source_cloud,
         pcl::PointCloud<pcl::PointXYZ>::Ptr target_cloud,
-        PointCloudRegistrationParams parameters,
+        ProbPointCloudRegistrationParams parameters,
         pcl::PointCloud<pcl::PointXYZ>::Ptr ground_truth_cloud);
     void align();
     bool hasConverged();
@@ -45,7 +45,7 @@ public:
     }
 
 private:
-    PointCloudRegistrationParams parameters_;
+    ProbPointCloudRegistrationParams parameters_;
     pcl::PointCloud<pcl::PointXYZ>::Ptr target_cloud_;
     pcl::PointCloud<pcl::PointXYZ>::Ptr source_cloud_;
     pcl::PointCloud<pcl::PointXYZ>::Ptr filtered_source_cloud_;
@@ -63,6 +63,6 @@ private:
     pcl::VoxelGrid<pcl::PointXYZ> filter_;
 };
 
-}  // namespace point_cloud_registration
+}  // namespace prob_point_cloud_registration
 
 #endif

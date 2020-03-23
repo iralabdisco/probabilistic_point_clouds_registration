@@ -2,13 +2,12 @@
 #include <pcl/point_types.h>
 #include <pcl/common/transforms.h>
 #include <pcl/kdtree/kdtree_flann.h>
-//#include <pcl/visualization/pcl_visualizer.h>
 #include <gtest/gtest.h>
 #include <pcl/common/transforms.h>
-#include "point_cloud_registration/point_cloud_registration_iteration.hpp"
+#include "prob_point_cloud_registration/prob_point_cloud_registration_iteration.hpp"
 
-using point_cloud_registration::PointCloudRegistrationIteration;
-using point_cloud_registration::PointCloudRegistrationParams;
+using prob_point_cloud_registration::ProbPointCloudRegistrationIteration;
+using prob_point_cloud_registration::ProbPointCloudRegistrationParams;
 
 pcl::PointCloud<pcl::PointXYZ> generateCloud()
 {
@@ -28,7 +27,7 @@ pcl::PointCloud<pcl::PointXYZ> generateCloud()
     return cloud;
 }
 
-TEST(PointCloudRegistrationTestSuite, exactDataAssociationGaussianTest)
+TEST(ProbPointCloudRegistrationTestSuite, exactDataAssociationGaussianTest)
 {
     auto source_cloud = generateCloud();
     pcl::PointCloud<pcl::PointXYZ> target_cloud;
@@ -44,10 +43,10 @@ TEST(PointCloudRegistrationTestSuite, exactDataAssociationGaussianTest)
     }
     data_association.setFromTriplets(tripletList.begin(), tripletList.end());
     data_association.makeCompressed();
-    PointCloudRegistrationParams params;
+    ProbPointCloudRegistrationParams params;
     params.dof = std::numeric_limits<double>::infinity();
     params.max_neighbours = 3;
-    PointCloudRegistrationIteration registration(source_cloud, target_cloud, data_association, params);
+    ProbPointCloudRegistrationIteration registration(source_cloud, target_cloud, data_association, params);
     ceres::Solver::Options options;
     options.linear_solver_type = ceres::SPARSE_NORMAL_CHOLESKY;
     options.use_nonmonotonic_steps = true;
@@ -72,7 +71,7 @@ TEST(PointCloudRegistrationTestSuite, exactDataAssociationGaussianTest)
     EXPECT_NEAR(mean_error, 0, 1e-6);
 }
 
-TEST(PointCloudRegistrationTestSuite, exactDataAssociationTDistributionTest)
+TEST(ProbPointCloudRegistrationTestSuite, exactDataAssociationTDistributionTest)
 {
     auto source_cloud = generateCloud();
     pcl::PointCloud<pcl::PointXYZ> target_cloud;
@@ -88,10 +87,10 @@ TEST(PointCloudRegistrationTestSuite, exactDataAssociationTDistributionTest)
     }
     data_association.setFromTriplets(tripletList.begin(), tripletList.end());
     data_association.makeCompressed();
-    PointCloudRegistrationParams params;
+    ProbPointCloudRegistrationParams params;
     params.dof = 5;
     params.max_neighbours = 3;
-    PointCloudRegistrationIteration registration(source_cloud, target_cloud, data_association, params);
+    ProbPointCloudRegistrationIteration registration(source_cloud, target_cloud, data_association, params);
     ceres::Solver::Options options;
     options.linear_solver_type = ceres::SPARSE_NORMAL_CHOLESKY;
     options.use_nonmonotonic_steps = true;

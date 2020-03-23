@@ -1,5 +1,5 @@
-#ifndef POINT_CLOUD_REGISTRATION_UTILITIES_HPP
-#define POINT_CLOUD_REGISTRATION_UTILITIES_HPP
+#ifndef PROB_POINT_CLOUD_REGISTRATION_UTILITIES_HPP
+#define PROB_POINT_CLOUD_REGISTRATION_UTILITIES_HPP
 #include <assert.h>
 #include <limits>
 #include <Eigen/Core>
@@ -9,7 +9,7 @@
 #include <pcl/point_types.h>
 #include <pcl/kdtree/kdtree_flann.h>
 
-namespace point_cloud_registration {
+namespace prob_point_cloud_registration {
 
 using pcl::euclideanDistance;
 
@@ -262,6 +262,6 @@ euler2Quaternion( const double roll,
     return q;
 }
 
-} // namespace point_cloud_registration
+} // namespace prob_point_cloud_registration
 
 #endif

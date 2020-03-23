@@ -20,16 +20,16 @@ link_directories(${PCL_LIBRARY_DIRS})
 add_definitions(${PCL_DEFINITIONS})
 
 add_library(lib${PROJECT_NAME}
-  src/point_cloud_registration.cc
-  include/point_cloud_registration/point_cloud_registration_iteration.hpp
-  include/point_cloud_registration/weight_updater_callback.hpp
-  include/point_cloud_registration/point_cloud_registration_params.hpp
-  include/point_cloud_registration/probabilistic_weights.hpp
-  include/point_cloud_registration/error_term.hpp
-  include/point_cloud_registration/utilities.hpp
-  include/point_cloud_registration/output_stream.hpp)
+  src/prob_point_cloud_registration.cc
+  include/prob_point_cloud_registration/prob_point_cloud_registration_iteration.hpp
+  include/prob_point_cloud_registration/weight_updater_callback.hpp
+  include/prob_point_cloud_registration/prob_point_cloud_registration_params.hpp
+  include/prob_point_cloud_registration/probabilistic_weights.hpp
+  include/prob_point_cloud_registration/error_term.hpp
+  include/prob_point_cloud_registration/utilities.hpp
+  include/prob_point_cloud_registration/output_stream.hpp)
 
-add_executable(${PROJECT_NAME} src/point_cloud_registration_ex.cc)
+add_executable(${PROJECT_NAME} src/prob_point_cloud_registration_ex.cc)
 
 add_executable(${PROJECT_NAME}_test
         test/test_main.cc
@@ -40,7 +40,7 @@ target_link_libraries(${PROJECT_NAME}_test lib${PROJECT_NAME} ${GTEST_LIBRARIES}
 target_link_libraries(${PROJECT_NAME} lib${PROJECT_NAME} ${CERES_LIBRARIES} ${PCL_LIBRARIES})
 
 install(TARGETS lib${PROJECT_NAME} DESTINATION lib)
-install(FILES include/point_cloud_registration/point_cloud_registration_params.hpp
-  include/point_cloud_registration/point_cloud_registration.h
-  include/point_cloud_registration/output_stream.hpp
-  include/point_cloud_registration/point_cloud_registration_iteration.hpp DESTINATION include)
+install(FILES include/prob_point_cloud_registration/prob_point_cloud_registration_params.hpp
+  include/prob_point_cloud_registration/prob_point_cloud_registration.h
+  include/prob_point_cloud_registration/output_stream.hpp
+  include/prob_point_cloud_registration/prob_point_cloud_registration_iteration.hpp DESTINATION include)
