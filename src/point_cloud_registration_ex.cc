@@ -5,6 +5,8 @@
 #include <string>
 #include <stdlib.h>
 
+#include <boost/filesystem.hpp>
+
 #include <Eigen/Core>
 #include <Eigen/Sparse>
 #include <pcl/common/transforms.h>
@@ -156,12 +158,15 @@ int main(int argc, char **argv)
                       trans.translation().z() << " ||| R: " << rotq.x() << ", " << rotq.y() << ", " << rotq.z() << ", " <<
                       rotq.w() << std::endl;
         }
-        std::string aligned_source_name = "aligned_" + source_file_name;
+        boost::filesystem::path source_path(source_file_name);
+        std::string aligned_source_name = "aligned_" + source_path.filename().string();
         std::cout << "Saving aligned source cloud to: " << aligned_source_name.c_str() << std::endl;
         pcl::io::savePCDFile(aligned_source_name, *aligned_source);
     }
     if (params.summary) {
-        std::string report_file_name = source_file_name + "_" + target_file_name + "_summary.txt";
+        boost::filesystem::path source_path(source_file_name);
+        boost::filesystem::path target_path(target_file_name);
+        std::string report_file_name = source_path.stem().string() + "_" + target_path.stem().string() + "_summary.txt";
         std::cout << "Saving registration report to: " << report_file_name << std::endl;
         std::ofstream report_file;
         report_file.open(report_file_name);
@@ -179,7 +184,7 @@ int main(int argc, char **argv)
    if (ground_truth)
     {
         double mse_gtruth = point_cloud_registration::calculateMSE(aligned_source, source_ground_truth);
-        std::cerr <<mse_gtruth << std::endl;
+        std::cout <<"MSE w.r.t. ground truth: "<<mse_gtruth << std::endl;
     }
     return 0;
 }
