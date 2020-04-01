@@ -93,17 +93,17 @@ int main(int argc, char **argv) {
       ground_truth = true;
       ground_truth_file_name = ground_truth_arg.getValue();
     }
-
-  } catch (TCLAP::ArgException &e) {
-    std::cerr << "error: " << e.error() << " for arg " << e.argId() << std::endl;
-    exit(EXIT_FAILURE);
-  }
-  if (transformation_arg.isSet()) {
+      if (transformation_arg.isSet()) {
     for (int i = 0; i < 3; i++) {
       for (int j = 0; j < 4; j++) {
         initial_transformation(i, j) = transformation_arg.getValue()[i * 4 + j];
       }
     }
+  }
+
+  } catch (TCLAP::ArgException &e) {
+    std::cerr << "error: " << e.error() << " for arg " << e.argId() << std::endl;
+    exit(EXIT_FAILURE);
   }
 
   if (use_gaussian) {
@@ -125,13 +125,13 @@ int main(int argc, char **argv) {
     std::cout << "Loading source point cloud from " << source_file_name << std::endl;
   }
   pcl::PointCloud<PointType>::Ptr source_ground_truth = boost::make_shared<pcl::PointCloud<PointType>>();
-  if (pcl::io::loadPCDFile<PointType>(source_file_name, *source_cloud) == -1) {
+  if (pcl::io::loadPCDFile<PointType>(source_file_name, *source_ground_truth) == -1) {
     std::cout << "Could not load source cloud, closing" << std::endl;
     exit(EXIT_FAILURE);
   }
   pcl::PointCloud<PointType>::Ptr source_cloud(new pcl::PointCloud<PointType>);
   pcl::transformPointCloud(*source_ground_truth, *source_cloud, initial_transformation);
-  double initial_error = point_clouds_registration_benchmark::calculate_error(source_ground_truth, source_cloud);
+  double initial_error = point_cloud_registration_benchmark::calculate_error(source_ground_truth, source_cloud);
   if (params.verbose) {
     std::cout << "Loading target point cloud from " << target_file_name << std::endl;
   }
@@ -149,7 +149,7 @@ int main(int argc, char **argv) {
   //       std::cout << "Could not load ground truth" << std::endl;
   //       ground_truth = false;
   //     }
-}
+
 
 std::unique_ptr<ProbPointCloudRegistration> registration;
 if (ground_truth) {
@@ -191,9 +191,9 @@ if (params.summary) {
   report_file << registration->report();
 }
 
-double final_error = point_clouds_registration_benchmark::calculate_error(source_ground_truth, aligned_source);
+double final_error = point_cloud_registration_benchmark::calculate_error(source_ground_truth, aligned_source);
 std::cout.precision(15);
-std::cout << initial_error << ", " << error << ", ";
+std::cout << initial_error << ", " << final_error << ", ";
 Eigen::Matrix4d matrix = estimated_transform.matrix();
 for (int i = 0; i < matrix.size(); i++) {
   std::cout << matrix(i) << " ";
