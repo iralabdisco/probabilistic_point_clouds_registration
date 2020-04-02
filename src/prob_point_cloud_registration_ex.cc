@@ -195,8 +195,10 @@ double final_error = point_cloud_registration_benchmark::calculate_error(source_
 std::cout.precision(15);
 std::cout << initial_error << ", " << final_error << ", ";
 Eigen::Matrix4d matrix = estimated_transform.matrix();
-for (int i = 0; i < matrix.size(); i++) {
-  std::cout << matrix(i) << " ";
+for (int i = 0; i < matrix.rows(); i++) {
+  for(int j = 0; j<matrix.cols(); j++){
+  std::cout << matrix(i,j) << " ";
+  }
 }
 return 0;
 }
