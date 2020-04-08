@@ -15,6 +15,7 @@ struct ProbPointCloudRegistrationParams {
     double initial_translation[3] = {0, 0, 0};
     double source_filter_size = 0;
     double target_filter_size = 0;
+    double source_points_fraction = 1.0;
 };
 }
 

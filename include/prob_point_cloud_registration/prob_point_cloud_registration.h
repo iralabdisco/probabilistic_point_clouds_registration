@@ -8,6 +8,8 @@
 #include <pcl/filters/voxel_grid.h>
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
+#include <pcl/kdtree/kdtree_flann.h>
+
 
 #include "prob_point_cloud_registration/output_stream.hpp"
 #include "prob_point_cloud_registration/prob_point_cloud_registration_iteration.hpp"
@@ -47,6 +49,7 @@ public:
 private:
     ProbPointCloudRegistrationParams parameters_;
     pcl::PointCloud<pcl::PointXYZ>::Ptr target_cloud_;
+    pcl::KdTreeFLANN<pcl::PointXYZ> target_kdtree_;
     pcl::PointCloud<pcl::PointXYZ>::Ptr source_cloud_;
     pcl::PointCloud<pcl::PointXYZ>::Ptr filtered_source_cloud_;
     pcl::PointCloud<pcl::PointXYZ>::Ptr prev_source_cloud_;

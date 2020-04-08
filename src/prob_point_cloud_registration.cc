@@ -6,6 +6,7 @@
 #include <pcl/common/angles.h>
 #include <pcl/common/transforms.h>
 #include <pcl/kdtree/kdtree_flann.h>
+#include "pcl/filters/random_sample.h"
 
 #include "prob_point_cloud_registration/prob_point_cloud_registration.h"
 #include "prob_point_cloud_registration/utilities.hpp"
@@ -31,6 +32,13 @@ ProbPointCloudRegistration::ProbPointCloudRegistration(
     } else {
         *filtered_source_cloud_ = *source_cloud_;
     }
+    if(parameters_.source_points_fraction <1){
+    pcl::RandomSample<pcl::PointXYZ> sample(true);
+    sample.setInputCloud(filtered_source_cloud_);
+    sample.setSample(filtered_source_cloud_->size() * parameters_.source_points_fraction);
+    sample.filter(*filtered_source_cloud_);
+    }
+
     if (parameters_.target_filter_size > 0) {
         output_stream_ << "Filtering target point cloud with leaf of size " <<
                        parameters_.target_filter_size << "\n";
@@ -39,6 +47,7 @@ ProbPointCloudRegistration::ProbPointCloudRegistration(
                             parameters_.target_filter_size);
         filter_.filter(*target_cloud_);
     }
+    target_kdtree_.setInputCloud(target_cloud_);
     if (parameters_.summary) {
         prev_source_cloud_ = boost::make_shared<pcl::PointCloud<pcl::PointXYZ>>(*source_cloud);
         report_ <<
@@ -63,43 +72,43 @@ ProbPointCloudRegistration::ProbPointCloudRegistration(
 void ProbPointCloudRegistration::align()
 {
     while (!hasConverged()) {
-        pcl::KdTreeFLANN<pcl::PointXYZ> kdtree;
-        kdtree.setInputCloud(target_cloud_);
+        // pcl::KdTreeFLANN<pcl::PointXYZ> kdtree;
+        // kdtree.setInputCloud(target_cloud_);
         std::vector<float> distances;
-	std::vector<float> all_distances;
-	Eigen::SparseMatrix<double, Eigen::RowMajor> data_association(filtered_source_cloud_->size(),
+	    std::vector<float> all_distances;
+	    Eigen::SparseMatrix<double, Eigen::RowMajor> data_association(filtered_source_cloud_->size(),
                                                                       target_cloud_->size());
         std::vector<Eigen::Triplet<double>> tripletList;
         for (std::size_t i = 0; i < filtered_source_cloud_->size(); i++) {
             std::vector<int> neighbours;
-            kdtree.radiusSearch(*filtered_source_cloud_, i, parameters_.radius, neighbours, distances,
-                                parameters_.max_neighbours);
-	    all_distances.insert(all_distances.end(), distances.begin(), distances.end());
+            // kdtree.radiusSearch(*filtered_source_cloud_, i, parameters_.radius, neighbours, distances,
+            //                     parameters_.max_neighbours);
+            target_kdtree_.nearestKSearch(*filtered_source_cloud_, i,parameters_.max_neighbours, neighbours, distances);
+	    // all_distances.insert(all_distances.end(), distances.begin(), distances.end());
             int k = 0;
             for (int j : neighbours) {
                 tripletList.push_back(Eigen::Triplet<double>(i, j, distances[k]));
                 k++;
             }
         }
-	std::vector<float>::iterator thres_it = all_distances.begin();
-	const std::size_t pos = 0.7 * std::distance(all_distances.begin(), all_distances.end());
+	// std::vector<float>::iterator thres_it = all_distances.begin();
+	// const std::size_t pos = 0.7 * std::distance(all_distances.begin(), all_distances.end());
 
-	std::advance(thres_it, pos);
-	std::nth_element(all_distances.begin(), thres_it, all_distances.end());
-	float threshold = all_distances[pos];
-	auto it = tripletList.begin();
-	while (it != tripletList.end())
-	{
-		// remove odd numbers
-		if (it->value()>threshold) {
-			// erase() invalidates the iterator, use returned iterator
-			it = tripletList.erase(it);
-		}
-		// Notice that iterator is incremented only on the else part (why?)
-		else {
-			++it;
-		}
-	}
+	// std::advance(thres_it, pos);
+	// std::nth_element(all_distances.begin(), thres_it, all_distances.end());
+	// float threshold = all_distances[pos];
+	// auto it = tripletList.begin();
+	// while (it != tripletList.end())
+	// {
+	// 	if (it->value()>threshold) {
+	// 		// erase() invalidates the iterator, use returned iterator
+	// 		it = tripletList.erase(it);
+	// 	}
+	// 	// Notice that iterator is incremented only on the else part (why?)
+	// 	else {
+	// 		++it;
+	// 	}
+	// }
 
         data_association.setFromTriplets(tripletList.begin(), tripletList.end());
         data_association.makeCompressed();

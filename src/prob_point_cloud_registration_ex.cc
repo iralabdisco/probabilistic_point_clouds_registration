@@ -73,6 +73,11 @@ int main(int argc, char **argv) {
                                                   "The path of the ground truth for the source cloud, if available",
                                                   false, "ground_truth.pcd", "string", cmd);
     TCLAP::SwitchArg dump_arg("", "dump", "Dump registration data to file", cmd, false);
+    TCLAP::ValueArg<double> downsample_perc_arg("p", "down_perc",
+                                                "The fraction of points of the "
+                                                "source point cloud to use "
+                                                "(randomly sampled) ",
+                                                false, 1, "float", cmd);
     cmd.parse(argc, argv);
 
     params.max_neighbours = max_neighbours_arg.getValue();
@@ -88,6 +93,7 @@ int main(int argc, char **argv) {
     target_file_name = target_file_name_arg.getValue();
     params.source_filter_size = source_filter_arg.getValue();
     params.target_filter_size = target_filter_arg.getValue();
+    params.source_points_fraction = downsample_perc_arg.getValue();
 
     if (ground_truth_arg.isSet()) {
       ground_truth = true;
@@ -129,6 +135,10 @@ int main(int argc, char **argv) {
     std::cout << "Could not load source cloud, closing" << std::endl;
     exit(EXIT_FAILURE);
   }
+
+  std::vector<int> nan_points;
+  pcl::removeNaNFromPointCloud(*source_ground_truth, *source_ground_truth, nan_points);
+
   pcl::PointCloud<PointType>::Ptr source_cloud(new pcl::PointCloud<PointType>);
   pcl::transformPointCloud(*source_ground_truth, *source_cloud, initial_transformation);
   double initial_error = point_cloud_registration_benchmark::calculate_error(source_ground_truth, source_cloud);
@@ -141,6 +151,7 @@ int main(int argc, char **argv) {
     exit(EXIT_FAILURE);
   }
 
+  pcl::removeNaNFromPointCloud(*target_cloud, *target_cloud, nan_points);
   //   pcl::PointCloud<PointType>::Ptr source_ground_truth;
   //   if (ground_truth) {
   //     std::cout << "Loading ground truth point cloud from " << ground_truth_file_name << std::endl;
