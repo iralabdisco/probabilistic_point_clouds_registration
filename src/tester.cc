@@ -128,7 +128,7 @@ int main(int argc, char **argv) {
         0, 0, 1;
 
     if (i == 0 || sources[i] != sources[i - 1]) {
-      if (pcl::io::loadPCDFile<PointType>(sources[i], *source_ground_truth) == -1) {
+      if (pcl::io::loadPCDFile<PointType>(cloud_folder+"/"+sources[i], *source_ground_truth) == -1) {
         std::cout << "Could not load source cloud, closing" << std::endl;
         exit(EXIT_FAILURE);
       }
@@ -150,7 +150,7 @@ int main(int argc, char **argv) {
     }
 
     if (i == 0 || targets[i] != targets[i - 1]) {
-      if (pcl::io::loadPCDFile<PointType>(targets[i], *target_cloud) == -1) {
+      if (pcl::io::loadPCDFile<PointType>(cloud_folder+"/"+targets[i], *target_cloud) == -1) {
         std::cout << "Could not load target cloud, closing" << std::endl;
         exit(EXIT_FAILURE);
       }
