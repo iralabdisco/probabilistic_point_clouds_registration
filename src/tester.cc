@@ -126,7 +126,8 @@ int main(int argc, char **argv) {
 
   params.source_filter_size = 0;
   params.target_filter_size = 0;
-  params.source_points_fraction = 0;
+  params.source_points_fraction = 1;
+
   for (std::size_t i = 0; i < sources.size(); i++) {
     std::cout << sources[i] << " " << targets[i] << std::endl;
     initial_transformation << t1[i], t2[i], t3[i], t4[i], t5[i], t6[i], t7[i], t8[i], t9[i], t10[i], t11[i], t12[i], 0,
