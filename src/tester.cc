@@ -30,6 +30,7 @@ int main(int argc, char **argv) {
   bool use_gaussian = false, ground_truth = false;
   std::string problem_file;
   std::string cloud_folder;
+  double source_filter_size, target_filter_size, source_points_fraction;
   Eigen::Matrix4d initial_transformation = Eigen::Matrix4d::Identity();
   ProbPointCloudRegistrationParams params;
   try {
@@ -73,8 +74,9 @@ int main(int argc, char **argv) {
     params.n_cost_drop_it = num_drop_iter_arg.getValue();
     problem_file = problem_file_arg.getValue();
     cloud_folder = cloud_folder_arg.getValue();
-    params.source_filter_size = source_filter_arg.getValue();
-    params.target_filter_size = target_filter_arg.getValue();
+    source_filter_size = source_filter_arg.getValue();
+    target_filter_size = target_filter_arg.getValue();
+    source_points_fraction = downsample_perc_arg.getValue();
   } catch (TCLAP::ArgException &e) {
     std::cerr << "error: " << e.error() << " for arg " << e.argId() << std::endl;
     exit(EXIT_FAILURE);
@@ -122,6 +124,9 @@ int main(int argc, char **argv) {
   }
   out_file << "\nid;initial_error;final_error;transformation\n";
 
+  params.source_filter_size = 0;
+  params.target_filter_size = 0;
+  params.source_points_fraction = 0;
   for (std::size_t i = 0; i < sources.size(); i++) {
     std::cout << sources[i] << " " << targets[i] << std::endl;
     initial_transformation << t1[i], t2[i], t3[i], t4[i], t5[i], t6[i], t7[i], t8[i], t9[i], t10[i], t11[i], t12[i], 0,
@@ -138,14 +143,12 @@ int main(int argc, char **argv) {
     double initial_error = point_cloud_registration_benchmark::calculate_error(source_ground_truth, source_cloud);
 
     voxel_filter.setInputCloud(source_cloud);
-    voxel_filter.setLeafSize(params.source_filter_size, params.source_filter_size, params.source_filter_size);
+    voxel_filter.setLeafSize(source_filter_size, source_filter_size, source_filter_size);
     voxel_filter.filter(*down_source_cloud);
-    params.source_filter_size = 0;
 
     random_filter.setInputCloud(down_source_cloud);
-    random_filter.setSample(down_source_cloud->size() * params.source_points_fraction);
+    random_filter.setSample(down_source_cloud->size() * source_points_fraction);
     random_filter.filter(*down_source_cloud);
-    params.source_points_fraction = 1;
 
     if (i == 0 || targets[i] != targets[i - 1]) {
       if (pcl::io::loadPCDFile<PointType>(cloud_folder + "/" + targets[i], *target_cloud) == -1) {
@@ -154,9 +157,8 @@ int main(int argc, char **argv) {
       }
       pcl::removeNaNFromPointCloud(*target_cloud, *target_cloud, nan_points);
       voxel_filter.setInputCloud(target_cloud);
-      voxel_filter.setLeafSize(params.target_filter_size, params.target_filter_size, params.target_filter_size);
+      voxel_filter.setLeafSize(target_filter_size, target_filter_size, target_filter_size);
       voxel_filter.filter(*target_cloud);
-      params.target_filter_size = 0;
     }
 
     registration = std::make_unique<ProbPointCloudRegistration>(down_source_cloud, target_cloud, params);
