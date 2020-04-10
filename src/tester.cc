@@ -84,7 +84,7 @@ int main(int argc, char **argv) {
     params.dof = std::numeric_limits<double>::infinity();
   }
 
-  rapidcsv::Document problems(problem_file, rapidcsv::LabelParams(0,-1), rapidcsv::SeparatorParams(' '));
+  rapidcsv::Document problems(problem_file, rapidcsv::LabelParams(0, -1), rapidcsv::SeparatorParams(' '));
 
   std::vector<std::string> sources = problems.GetColumn<std::string>("source");
   std::vector<std::string> targets = problems.GetColumn<std::string>("target");
@@ -128,7 +128,7 @@ int main(int argc, char **argv) {
         0, 0, 1;
 
     if (i == 0 || sources[i] != sources[i - 1]) {
-      if (pcl::io::loadPCDFile<PointType>(cloud_folder+"/"+sources[i], *source_ground_truth) == -1) {
+      if (pcl::io::loadPCDFile<PointType>(cloud_folder + "/" + sources[i], *source_ground_truth) == -1) {
         std::cout << "Could not load source cloud, closing" << std::endl;
         exit(EXIT_FAILURE);
       }
@@ -137,20 +137,18 @@ int main(int argc, char **argv) {
     pcl::transformPointCloud(*source_ground_truth, *source_cloud, initial_transformation);
     double initial_error = point_cloud_registration_benchmark::calculate_error(source_ground_truth, source_cloud);
 
-    if (i == 0 || sources[i] != sources[i - 1]) {
-      voxel_filter.setInputCloud(source_cloud);
-      voxel_filter.setLeafSize(params.source_filter_size, params.source_filter_size, params.source_filter_size);
-      voxel_filter.filter(*down_source_cloud);
-      params.source_filter_size = 0;
+    voxel_filter.setInputCloud(source_cloud);
+    voxel_filter.setLeafSize(params.source_filter_size, params.source_filter_size, params.source_filter_size);
+    voxel_filter.filter(*down_source_cloud);
+    params.source_filter_size = 0;
 
-      random_filter.setInputCloud(down_source_cloud);
-      random_filter.setSample(down_source_cloud->size() * params.source_points_fraction);
-      random_filter.filter(*down_source_cloud);
-      params.source_points_fraction = 1;
-    }
+    random_filter.setInputCloud(down_source_cloud);
+    random_filter.setSample(down_source_cloud->size() * params.source_points_fraction);
+    random_filter.filter(*down_source_cloud);
+    params.source_points_fraction = 1;
 
     if (i == 0 || targets[i] != targets[i - 1]) {
-      if (pcl::io::loadPCDFile<PointType>(cloud_folder+"/"+targets[i], *target_cloud) == -1) {
+      if (pcl::io::loadPCDFile<PointType>(cloud_folder + "/" + targets[i], *target_cloud) == -1) {
         std::cout << "Could not load target cloud, closing" << std::endl;
         exit(EXIT_FAILURE);
       }
