@@ -84,31 +84,31 @@ void ProbPointCloudRegistration::align()
             // kdtree.radiusSearch(*filtered_source_cloud_, i, parameters_.radius, neighbours, distances,
             //                     parameters_.max_neighbours);
             target_kdtree_.nearestKSearch(*filtered_source_cloud_, i,parameters_.max_neighbours, neighbours, distances);
-	    // all_distances.insert(all_distances.end(), distances.begin(), distances.end());
+	    all_distances.insert(all_distances.end(), distances.begin(), distances.end());
             int k = 0;
             for (int j : neighbours) {
                 tripletList.push_back(Eigen::Triplet<double>(i, j, distances[k]));
                 k++;
             }
         }
-	// std::vector<float>::iterator thres_it = all_distances.begin();
-	// const std::size_t pos = 0.7 * std::distance(all_distances.begin(), all_distances.end());
+	std::vector<float>::iterator thres_it = all_distances.begin();
+	const std::size_t pos = 0.7 * std::distance(all_distances.begin(), all_distances.end());
 
-	// std::advance(thres_it, pos);
-	// std::nth_element(all_distances.begin(), thres_it, all_distances.end());
-	// float threshold = all_distances[pos];
-	// auto it = tripletList.begin();
-	// while (it != tripletList.end())
-	// {
-	// 	if (it->value()>threshold) {
-	// 		// erase() invalidates the iterator, use returned iterator
-	// 		it = tripletList.erase(it);
-	// 	}
-	// 	// Notice that iterator is incremented only on the else part (why?)
-	// 	else {
-	// 		++it;
-	// 	}
-	// }
+	 std::advance(thres_it, pos);
+	 std::nth_element(all_distances.begin(), thres_it, all_distances.end());
+	 float threshold = all_distances[pos];
+	 auto it = tripletList.begin();
+	 while (it != tripletList.end())
+	 {
+	 	if (it->value()>threshold) {
+	 		// erase() invalidates the iterator, use returned iterator
+	 		it = tripletList.erase(it);
+	 	}
+	 	// Notice that iterator is incremented only on the else part (why?)
+	 	else {
+	 		++it;
+	 	}
+	 }
 
         data_association.setFromTriplets(tripletList.begin(), tripletList.end());
         data_association.makeCompressed();

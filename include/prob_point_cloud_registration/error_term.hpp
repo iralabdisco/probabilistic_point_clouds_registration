@@ -15,7 +15,7 @@ class ErrorTerm {
       : source_point_(source_point.x, source_point.y, source_point.z),
         target_point_(target_point.x, target_point.y, target_point.z),
         weight_(new ceres::LossFunctionWrapper(
-            new ceres::ScaledLoss(new ceres::SoftLOneLoss(1), 1, ceres::TAKE_OWNERSHIP),
+            new ceres::ScaledLoss(NULL, 1, ceres::TAKE_OWNERSHIP),
             ceres::TAKE_OWNERSHIP)){};
 
   template <typename T>
@@ -38,7 +38,7 @@ class ErrorTerm {
 
   void updateWeight(double new_weight) {
     weight_->Reset(
-        new ceres::ScaledLoss(new ceres::SoftLOneLoss(1), new_weight, ceres::TAKE_OWNERSHIP),
+        new ceres::ScaledLoss(NULL, new_weight, ceres::TAKE_OWNERSHIP),
         ceres::TAKE_OWNERSHIP);
   }
 
