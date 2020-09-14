@@ -15,7 +15,7 @@ with open(f"{result_file}", mode="w") as out_file:
         out_file, delimiter=";", quotechar='"', quoting=csv.QUOTE_MINIMAL
     )
     result_writer.writerow(["#", executable] + parameters)
-    result_writer.writerow(["id", "initial_error", "final_error", "transformation"])
+    result_writer.writerow(["id", "initial_error", "final_error", "num_iter", "transformation"])
     with open(sys.argv[1]) as csvfile:
         file_reader = csv.DictReader(csvfile, delimiter=" ")
         for row in tqdm.tqdm(file_reader):

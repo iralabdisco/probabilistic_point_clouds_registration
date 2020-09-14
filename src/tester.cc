@@ -167,7 +167,7 @@ int main(int argc, char **argv) {
     pcl::transformPointCloud(*source_cloud, *aligned_source, estimated_transform);
     double final_error = point_cloud_registration_benchmark::calculate_error(source_ground_truth, aligned_source);
 
-    out_file << ids[i] << ";" << initial_error << ";" << final_error << ";";
+    out_file << ids[i] << ";" << initial_error << ";" << final_error << ";"<<registration.current_iteration()<<";";
     Eigen::Matrix4d matrix = estimated_transform.matrix();
     for (int i = 0; i < matrix.rows(); i++) {
       for (int j = 0; j < matrix.cols(); j++) {

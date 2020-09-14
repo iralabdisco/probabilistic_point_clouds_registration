@@ -41,6 +41,10 @@ public:
         return transformation_history_;
     }
 
+    inline int current_iteration()
+    {
+        return current_iteration_;
+    }
     inline std::string report()
     {
         return report_.str();
