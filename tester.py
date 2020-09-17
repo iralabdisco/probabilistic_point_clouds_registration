@@ -6,7 +6,7 @@ folder = sys.argv[2]
 # folder = "p2at_met"
 results = []
 command = []
-parameters = ["-r 1000","-s 0.1", "-t 0.1", "-m 5", "-i 40", "-p 0.75"]
+parameters = ["-r 1000","-s 0.1", "-t 0.1", "-m 5", "-i 100", "-p 0.75"]
 _, result_file = os.path.split(problem_file)
 result_file = result_file.replace(".txt", "_result.txt")
 
