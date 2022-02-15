@@ -2,7 +2,7 @@
 
 This is an implementation of the Probabilistic Point Clouds Registration algorithm presented at IROS 2016, an ICP-like registration algorithm that uses a novel data association strategy derived from a probabilistic model. The result is a technique particularly robust against noise and outliers.
 
-If you use this software for your work, please cite the followint paper:
+If you use this software for your work, please cite the following paper:
 >G. Agamennoni, S. Fontana, R. Y. Siegwart and D. G. Sorrenti, "Point Clouds Registration with Probabilistic Data Association," 2016 IEEE/RSJ International Conference on Intelligent Robots and Systems (IROS), Daejeon, 2016, pp. 4092-4098.
 
 ## Instructions
