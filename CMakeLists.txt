@@ -36,7 +36,7 @@ add_executable(${PROJECT_NAME}_test
         test/ProbabilisticWeightsTest.cc
         test/PointCloudRegistrationTest.cc)
 
-target_link_libraries(${PROJECT_NAME}_test lib${PROJECT_NAME} ${GTEST_LIBRARIES} ${CERES_LIBRARIES} pthread)
+target_link_libraries(${PROJECT_NAME}_test lib${PROJECT_NAME} ${GTEST_LIBRARIES} ${CERES_LIBRARIES} ${PCL_LIBRARIES} pthread)
 target_link_libraries(${PROJECT_NAME} lib${PROJECT_NAME} ${CERES_LIBRARIES} ${PCL_LIBRARIES})
 
 install(TARGETS lib${PROJECT_NAME} DESTINATION lib)
