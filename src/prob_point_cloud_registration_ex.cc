@@ -109,7 +109,7 @@ int main(int argc, char **argv)
         std::cout << "Loading source point cloud from " << source_file_name << std::endl;
     }
     pcl::PointCloud<PointType>::Ptr source_cloud =
-        boost::make_shared<pcl::PointCloud<PointType>>();
+        std::make_shared<pcl::PointCloud<PointType>>();
     if (pcl::io::loadPCDFile<PointType>(source_file_name, *source_cloud) == -1) {
         std::cout << "Could not load source cloud, closing" << std::endl;
         exit(EXIT_FAILURE);
@@ -119,7 +119,7 @@ int main(int argc, char **argv)
         std::cout << "Loading target point cloud from " << target_file_name << std::endl;
     }
     pcl::PointCloud<PointType>::Ptr target_cloud =
-        boost::make_shared<pcl::PointCloud<PointType>>();
+        std::make_shared<pcl::PointCloud<PointType>>();
     if (pcl::io::loadPCDFile<PointType>(target_file_name, *target_cloud) == -1) {
         std::cout << "Could not load target cloud, closing" << std::endl;
         exit(EXIT_FAILURE);
@@ -128,7 +128,7 @@ int main(int argc, char **argv)
     pcl::PointCloud<PointType>::Ptr source_ground_truth;
     if (ground_truth) {
         std::cout << "Loading ground truth point cloud from " << ground_truth_file_name << std::endl;
-        source_ground_truth = boost::make_shared<pcl::PointCloud<PointType>>();
+        source_ground_truth = std::make_shared<pcl::PointCloud<PointType>>();
         if (pcl::io::loadPCDFile<PointType>(ground_truth_file_name, *source_ground_truth) == -1) {
             std::cout << "Could not load ground truth" << std::endl;
             ground_truth = false;
@@ -148,7 +148,7 @@ int main(int argc, char **argv)
     }
     registration->align();
     auto estimated_transform = registration->transformation();
-    pcl::PointCloud<PointType>::Ptr aligned_source = boost::make_shared<pcl::PointCloud<PointType>>();
+    pcl::PointCloud<PointType>::Ptr aligned_source = std::make_shared<pcl::PointCloud<PointType>>();
     pcl::transformPointCloud (*source_cloud, *aligned_source, estimated_transform);
     if (params.verbose) {
         std::cout << "Transformation history:" << std::endl;

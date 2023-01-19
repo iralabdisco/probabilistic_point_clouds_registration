@@ -19,8 +19,8 @@ ProbPointCloudRegistration::ProbPointCloudRegistration(
     target_cloud_(target_cloud), mse_ground_truth_(0), current_iteration_(0), mse_prev_it_(0),
     cost_drop_(0), num_unusefull_iter_(0), output_stream_(parameters.verbose)
 {
-    source_cloud_ = boost::make_shared<pcl::PointCloud<pcl::PointXYZ>>(*source_cloud);
-    filtered_source_cloud_ = boost::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
+    source_cloud_ = std::make_shared<pcl::PointCloud<pcl::PointXYZ>>(*source_cloud);
+    filtered_source_cloud_ = std::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
     if (parameters_.source_filter_size > 0) {
         output_stream_ << "Filtering source point cloud with leaf of size " <<
                        parameters_.source_filter_size << "\n";
@@ -40,7 +40,7 @@ ProbPointCloudRegistration::ProbPointCloudRegistration(
         filter_.filter(*target_cloud_);
     }
     if (parameters_.summary) {
-        prev_source_cloud_ = boost::make_shared<pcl::PointCloud<pcl::PointXYZ>>(*source_cloud);
+        prev_source_cloud_ = std::make_shared<pcl::PointCloud<pcl::PointXYZ>>(*source_cloud);
         report_ <<
                 "iter, n_success_steps, initial_cost, final_cost, tx, ty, tz, roll, pitch, yaw, mse_prev_iter, mse_gtruth"
                 << std::endl;
@@ -54,7 +54,7 @@ ProbPointCloudRegistration::ProbPointCloudRegistration(
     pcl::PointCloud<pcl::PointXYZ>::Ptr ground_truth_cloud):
     ProbPointCloudRegistration::ProbPointCloudRegistration(source_cloud, target_cloud, parameters)
 {
-    ground_truth_cloud_ = boost::make_shared<pcl::PointCloud<pcl::PointXYZ>>(*ground_truth_cloud);
+    ground_truth_cloud_ = std::make_shared<pcl::PointCloud<pcl::PointXYZ>>(*ground_truth_cloud);
     ground_truth_ = true;
     mse_ground_truth_ = prob_point_cloud_registration::calculateMSE(source_cloud_, ground_truth_cloud_);
     output_stream_ << "Initial MSE w.r.t. ground truth: " << mse_ground_truth_ << "\n";

@@ -13,7 +13,9 @@ Dependencies:
 - PCL
 - OpenMP (not necessary, used only to parallelize the computation)
 - [tclap](http://tclap.sourceforge.net/)
+- Ceres
 - Cmake
+- GTest (optional, for tests)
 
 This software uses [cmake](cmake.org) to ease the compilation:
 ~~~~ 
